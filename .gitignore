@@ -1,0 +1,19 @@
+# Build output
+/g
+/g.exe
+bin/
+dist/
+
+# Test and coverage output
+*.out
+*.test
+coverage.html
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Editor and OS noise
+.DS_Store
+.idea/
+.vscode/
