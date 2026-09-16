@@ -30,6 +30,10 @@ const (
 type Service interface {
 	// Status summarises the repository containing dir.
 	Status(ctx context.Context, dir string) (workflow.Status, error)
+	// NewBranch creates a branch for a piece of work and switches to it.
+	NewBranch(ctx context.Context, dir string, req workflow.NewBranchRequest) (workflow.NewBranchResult, error)
+	// Switch checks out an existing local branch.
+	Switch(ctx context.Context, dir string, req workflow.SwitchRequest) (workflow.SwitchResult, error)
 }
 
 // Env carries the dependencies and streams a command needs.

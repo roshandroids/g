@@ -24,6 +24,19 @@ type Config struct {
 	// ConfirmDestructive requires explicit confirmation before an operation
 	// discards commits or uncommitted work.
 	ConfirmDestructive bool `json:"confirmDestructive"`
+	// BranchNaming controls how branch names are built.
+	BranchNaming BranchNaming `json:"branchNaming"`
+}
+
+// BranchNaming controls how a branch name is built from an issue key and a
+// description.
+type BranchNaming struct {
+	// Separator joins the issue key and the description slug. One of "-", "_"
+	// or "/"; anything else is rejected when a branch is created.
+	Separator string `json:"separator"`
+	// MaxLength caps the length of a generated branch name. Zero means no
+	// limit. Truncation drops whole trailing words where it can.
+	MaxLength int `json:"maxLength"`
 }
 
 // Default returns the built-in configuration.
@@ -31,6 +44,7 @@ func Default() Config {
 	return Config{
 		DefaultBaseBranch:  "main",
 		ConfirmDestructive: true,
+		BranchNaming:       BranchNaming{Separator: "-"},
 	}
 }
 

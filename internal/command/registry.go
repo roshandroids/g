@@ -43,20 +43,22 @@ var statusCommand = Command{
 	Run:     runStatus,
 }
 
+var newCommand = Command{
+	Name:    "new",
+	Usage:   "g new <ticket> [description]",
+	Summary: "Create a branch for a new piece of work",
+	Run:     runNew,
+}
+
+var switchCommand = Command{
+	Name:    "switch",
+	Usage:   "g switch <branch>",
+	Summary: "Switch to an existing branch",
+	Run:     runSwitch,
+}
+
 // Planned commands: declarations only, no behaviour.
 var (
-	newCommand = Command{
-		Name:    "new",
-		Usage:   "g new <ticket> [description]",
-		Summary: "Create a branch for a new piece of work",
-		Roadmap: "v0.2",
-	}
-	switchCommand = Command{
-		Name:    "switch",
-		Usage:   "g switch <branch>",
-		Summary: "Switch to an existing branch",
-		Roadmap: "v0.2",
-	}
 	syncCommand = Command{
 		Name:    "sync",
 		Usage:   "g sync",

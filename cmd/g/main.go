@@ -47,12 +47,16 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 
 	runner := process.ExecRunner{}
 	env := &command.Env{
-		Service: workflow.NewService(git.NewClient(runner)),
-		GitHub:  github.NewExecClient(runner),
-		Config:  cfg,
-		Dir:     dir,
-		Out:     stdout,
-		Err:     stderr,
+		Service: workflow.NewService(git.NewClient(runner), workflow.Options{
+			DefaultBaseBranch: cfg.DefaultBaseBranch,
+			BranchSeparator:   cfg.BranchNaming.Separator,
+			BranchMaxLength:   cfg.BranchNaming.MaxLength,
+		}),
+		GitHub: github.NewExecClient(runner),
+		Config: cfg,
+		Dir:    dir,
+		Out:    stdout,
+		Err:    stderr,
 	}
 
 	return command.Run(ctx, env, args)

@@ -20,6 +20,15 @@ type fakeService struct {
 	status workflow.Status
 	err    error
 	dirs   []string
+
+	newRequest  workflow.NewBranchRequest
+	newResult   workflow.NewBranchResult
+	newErr      error
+	newCalls    int
+	switchReq   workflow.SwitchRequest
+	switchRes   workflow.SwitchResult
+	switchErr   error
+	switchCalls int
 }
 
 func (f *fakeService) Status(_ context.Context, dir string) (workflow.Status, error) {
@@ -30,13 +39,33 @@ func (f *fakeService) Status(_ context.Context, dir string) (workflow.Status, er
 	return f.status, nil
 }
 
+func (f *fakeService) NewBranch(_ context.Context, dir string, req workflow.NewBranchRequest) (workflow.NewBranchResult, error) {
+	f.dirs = append(f.dirs, dir)
+	f.newCalls++
+	f.newRequest = req
+	if f.newErr != nil {
+		return workflow.NewBranchResult{}, f.newErr
+	}
+	return f.newResult, nil
+}
+
+func (f *fakeService) Switch(_ context.Context, dir string, req workflow.SwitchRequest) (workflow.SwitchResult, error) {
+	f.dirs = append(f.dirs, dir)
+	f.switchCalls++
+	f.switchReq = req
+	if f.switchErr != nil {
+		return workflow.SwitchResult{}, f.switchErr
+	}
+	return f.switchRes, nil
+}
+
 func TestRunWithoutArgumentsShowsShortHelp(t *testing.T) {
 	env, out, errOut := newEnv(&fakeService{})
 
 	if code := Run(context.Background(), env, nil); code != ExitOK {
 		t.Errorf("Run() = %d, want %d", code, ExitOK)
 	}
-	if !strings.Contains(out.String(), "Commands: status, help") {
+	if !strings.Contains(out.String(), "Commands: status, help, new, switch") {
 		t.Errorf("Run() output = %q, want it to list the available commands", out.String())
 	}
 	if !strings.Contains(out.String(), "g --help") {
@@ -95,7 +124,7 @@ func TestRunRejectsUnknownFlag(t *testing.T) {
 }
 
 func TestRunReportsPlannedCommandsAsUnimplemented(t *testing.T) {
-	for _, name := range []string{"new", "switch", "sync", "commit", "push", "undo", "clean"} {
+	for _, name := range []string{"sync", "commit", "push", "undo", "clean"} {
 		t.Run(name, func(t *testing.T) {
 			service := &fakeService{}
 			env, out, errOut := newEnv(service)
