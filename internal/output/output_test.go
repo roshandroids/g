@@ -12,11 +12,13 @@ import (
 func TestRenderStatusCleanRepository(t *testing.T) {
 	status := workflow.Status{
 		Name:     "nexus_applicant",
+		Root:     "/work/nexus_applicant",
 		Branch:   "HCM-37538-applicant-id-update",
 		Upstream: &workflow.Upstream{Name: "origin/HCM-37538-applicant-id-update"},
 	}
 
 	want := "Repository: nexus_applicant\n" +
+		"Root:       /work/nexus_applicant\n" +
 		"Branch:     HCM-37538-applicant-id-update\n" +
 		"Upstream:   origin/HCM-37538-applicant-id-update\n" +
 		"\n" +
@@ -35,11 +37,13 @@ func TestRenderStatusCleanRepository(t *testing.T) {
 func TestRenderStatusCleanButAhead(t *testing.T) {
 	status := workflow.Status{
 		Name:     "app",
+		Root:     "/work/app",
 		Branch:   "main",
 		Upstream: &workflow.Upstream{Name: "origin/main", Ahead: 2},
 	}
 
 	want := "Repository: app\n" +
+		"Root:       /work/app\n" +
 		"Branch:     main\n" +
 		"Upstream:   origin/main\n" +
 		"\n" +
@@ -54,9 +58,10 @@ func TestRenderStatusCleanButAhead(t *testing.T) {
 }
 
 func TestRenderStatusWithoutUpstream(t *testing.T) {
-	status := workflow.Status{Name: "demo", Branch: "main"}
+	status := workflow.Status{Name: "demo", Root: "/work/demo", Branch: "main"}
 
 	want := "Repository: demo\n" +
+		"Root:       /work/demo\n" +
 		"Branch:     main\n" +
 		"Upstream:   none\n" +
 		"\n" +
@@ -68,9 +73,10 @@ func TestRenderStatusWithoutUpstream(t *testing.T) {
 }
 
 func TestRenderStatusDetachedHead(t *testing.T) {
-	status := workflow.Status{Name: "demo", Detached: true, Head: "a1b2c3d"}
+	status := workflow.Status{Name: "demo", Root: "/work/demo", Detached: true, Head: "a1b2c3d"}
 
 	want := "Repository: demo\n" +
+		"Root:       /work/demo\n" +
 		"Branch:     detached at a1b2c3d\n" +
 		"Upstream:   none\n" +
 		"\n" +
@@ -84,6 +90,7 @@ func TestRenderStatusDetachedHead(t *testing.T) {
 func TestRenderStatusDirtyRepository(t *testing.T) {
 	status := workflow.Status{
 		Name:     "demo",
+		Root:     "/work/demo",
 		Branch:   "main",
 		Upstream: &workflow.Upstream{Name: "origin/main", Ahead: 2, Behind: 1},
 		Staged: []workflow.Change{
@@ -96,8 +103,11 @@ func TestRenderStatusDirtyRepository(t *testing.T) {
 	}
 
 	want := "Repository: demo\n" +
+		"Root:       /work/demo\n" +
 		"Branch:     main\n" +
 		"Upstream:   origin/main\n" +
+		"\n" +
+		"Working tree: dirty\n" +
 		"\n" +
 		"Staged:\n" +
 		"  modified     lib/foo.dart\n" +
@@ -120,9 +130,60 @@ func TestRenderStatusDirtyRepository(t *testing.T) {
 	}
 }
 
+// A paused rebase leaves HEAD detached and git branch --show-current empty, so
+// without the operation line the output would read as an unexplained detached
+// HEAD.
+func TestRenderStatusReportsAPausedOperation(t *testing.T) {
+	status := workflow.Status{
+		Name:      "demo",
+		Root:      "/work/demo",
+		Detached:  true,
+		Head:      "a1b2c3d",
+		Operation: git.OperationRebase,
+	}
+
+	want := "Repository: demo\n" +
+		"Root:       /work/demo\n" +
+		"Branch:     detached at a1b2c3d\n" +
+		"Upstream:   none\n" +
+		"Operation:  rebase in progress\n" +
+		"\n" +
+		"Working tree: clean\n"
+
+	if got := renderStatus(t, status); got != want {
+		t.Errorf("RenderStatus() =\n%q\nwant\n%q", got, want)
+	}
+}
+
+func TestRenderStatusReportsEveryPausedOperation(t *testing.T) {
+	for _, operation := range []git.Operation{
+		git.OperationRebase,
+		git.OperationMerge,
+		git.OperationCherryPick,
+		git.OperationRevert,
+	} {
+		t.Run(string(operation), func(t *testing.T) {
+			got := renderStatus(t, workflow.Status{Name: "demo", Operation: operation})
+
+			if !strings.Contains(got, "Operation:  "+string(operation)+" in progress") {
+				t.Errorf("RenderStatus() = %q, want it to report the %s", got, operation)
+			}
+		})
+	}
+}
+
+func TestRenderStatusOmitsTheOperationWhenIdle(t *testing.T) {
+	got := renderStatus(t, workflow.Status{Name: "demo", Branch: "main"})
+
+	if strings.Contains(got, "Operation:") {
+		t.Errorf("RenderStatus() = %q, want no operation line when nothing is paused", got)
+	}
+}
+
 func TestRenderStatusWithoutUpstreamOmitsAheadAndBehind(t *testing.T) {
 	status := workflow.Status{
 		Name:      "demo",
+		Root:      "/work/demo",
 		Branch:    "main",
 		Untracked: []string{"notes.txt"},
 	}

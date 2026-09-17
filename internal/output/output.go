@@ -28,20 +28,31 @@ type CommandSummary struct {
 }
 
 // RenderStatus writes a concise summary of s.
+//
+// This is deliberately not a replacement for `git status`: the full porcelain
+// output already exists and is better at being exhaustive. What g shows is what
+// the other workflows act on — where you are, what you track, whether a Git
+// operation is paused, and which paths are staged, unstaged or untracked.
 func RenderStatus(w io.Writer, s workflow.Status) error {
 	var b strings.Builder
 
 	field(&b, "Repository:", s.Name)
+	field(&b, "Root:", s.Root)
 	field(&b, "Branch:", branchLabel(s))
-	if s.Upstream != nil {
-		field(&b, "Upstream:", s.Upstream.Name)
-	} else {
-		field(&b, "Upstream:", "none")
+	field(&b, "Upstream:", upstreamLabel(s))
+
+	// A paused operation explains an otherwise puzzling detached HEAD, so it is
+	// reported next to the branch rather than buried in the change list.
+	if s.Operation != "" {
+		field(&b, "Operation:", string(s.Operation)+" in progress")
 	}
 
+	// The clean/dirty verdict is stated rather than left to be inferred from
+	// whether a list of paths follows.
 	if s.Clean() {
 		b.WriteString("\nWorking tree: clean\n")
 	} else {
+		b.WriteString("\nWorking tree: dirty\n")
 		writeChanges(&b, "Staged", s.Staged)
 		writeChanges(&b, "Unstaged", s.Unstaged)
 		writePaths(&b, "Untracked", s.Untracked)
@@ -55,6 +66,15 @@ func RenderStatus(w io.Writer, s workflow.Status) error {
 	}
 
 	return write(w, b.String())
+}
+
+// upstreamLabel describes the tracked branch, which is absent more often than
+// not on a freshly created branch.
+func upstreamLabel(s workflow.Status) string {
+	if s.Upstream == nil {
+		return "none"
+	}
+	return s.Upstream.Name
 }
 
 // RenderShortHelp writes the help shown when g runs without arguments.

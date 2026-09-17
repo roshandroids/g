@@ -152,6 +152,45 @@ func TestServiceStatusPropagatesGitFailures(t *testing.T) {
 	}
 }
 
+// The operation state is the difference between "you are looking at a commit"
+// and "you are part way through something", so it has to survive summarising.
+func TestServiceStatusCarriesThePausedOperation(t *testing.T) {
+	for _, operation := range []git.Operation{
+		git.OperationRebase,
+		git.OperationMerge,
+		git.OperationCherryPick,
+		git.OperationRevert,
+		git.OperationNone,
+	} {
+		t.Run(string(operation), func(t *testing.T) {
+			repo := &fakeRepository{status: git.Status{Root: "/work/demo", Operation: operation}}
+
+			status, err := NewService(repo, Options{}).Status(context.Background(), "/work/demo")
+			if err != nil {
+				t.Fatalf("Status() error = %v, want nil", err)
+			}
+			if status.Operation != operation {
+				t.Errorf("Operation = %q, want %q", status.Operation, operation)
+			}
+		})
+	}
+}
+
+func TestServiceStatusCarriesTheRoot(t *testing.T) {
+	repo := &fakeRepository{status: git.Status{Root: "/work/demo", Branch: "main"}}
+
+	status, err := NewService(repo, Options{}).Status(context.Background(), "/work/demo/nested")
+	if err != nil {
+		t.Fatalf("Status() error = %v, want nil", err)
+	}
+
+	// The root is the work tree git reports, not the directory g was pointed
+	// at, which is what makes it useful for a shell `cd`.
+	if want := "/work/demo"; status.Root != want {
+		t.Errorf("Root = %q, want %q", status.Root, want)
+	}
+}
+
 func TestStatusClean(t *testing.T) {
 	tests := []struct {
 		name   string

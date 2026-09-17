@@ -29,8 +29,11 @@ Understanding where you are:
 ```console
 $ g status
 Repository: nexus_applicant
+Root:       /Users/me/Projects/nexus_applicant
 Branch:     HCM-37538-applicant-id-update
 Upstream:   origin/HCM-37538-applicant-id-update
+
+Working tree: dirty
 
 Staged:
   added        lib/applicant/history.dart
@@ -87,6 +90,46 @@ Planned, declared in the command surface but intentionally not implemented yet:
 
 Invoking a planned command exits with an error explaining that it is not
 implemented; it never pretends to succeed.
+
+### `g status`
+
+Shows the state the other workflows actually act on, and nothing else:
+
+- the repository name and the **work tree root**, so a shell `cd` has somewhere
+  to go;
+- the **current branch**, or `detached at <commit>` when HEAD is not on one;
+- the **upstream** the branch tracks, or `none`;
+- the **paused operation**, if a rebase, merge, cherry-pick or revert is part way
+  through;
+- whether the working tree is **clean or dirty**, stated outright rather than
+  left to be inferred from whether a list follows;
+- the **staged**, **unstaged**, **untracked** and **conflicted** paths;
+- how far the branch has **diverged** from its upstream.
+
+This is deliberately not a replacement for `git status`. The full output already
+exists and is better at being exhaustive — it lists hints, ignored files and
+directory rollups that a summary has no business reproducing. `g status` answers
+the narrower question of what `g new`, `g switch`, `g commit` and `g push` are
+about to do.
+
+The operation line exists because of a trap worth naming. While a rebase is
+paused, `git branch --show-current` is **empty** — the branch is detached for the
+duration — so a summary built only on the branch name would report a detached
+HEAD and leave you to work out why. The two facts are shown together:
+
+```console
+$ g status
+Repository: nexus_applicant
+Root:       /Users/me/Projects/nexus_applicant
+Branch:     detached at 81f45c8
+Upstream:   none
+Operation:  rebase in progress
+
+Working tree: dirty
+
+Conflicted:
+  lib/applicant/history.dart
+```
 
 ### `g new <ticket> [description]`
 
