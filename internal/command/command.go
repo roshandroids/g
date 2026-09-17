@@ -34,6 +34,8 @@ type Service interface {
 	NewBranch(ctx context.Context, dir string, req workflow.NewBranchRequest) (workflow.NewBranchResult, error)
 	// Switch checks out an existing local branch.
 	Switch(ctx context.Context, dir string, req workflow.SwitchRequest) (workflow.SwitchResult, error)
+	// Commit records the staged changes.
+	Commit(ctx context.Context, dir string, req workflow.CommitRequest) (workflow.CommitResult, error)
 }
 
 // Env carries the dependencies and streams a command needs.

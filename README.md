@@ -7,11 +7,18 @@ not a reimplementation of Git: it wraps the installed `git` executable, keeps th
 output short, and stays out of the way. Native `git` remains the escape hatch for
 anything `g` does not do.
 
-Starting a piece of work:
+Starting a piece of work and recording it:
 
 ```console
 $ g new HCM-37538 "applicant id update"
 Created branch HCM-37538-applicant-id-update from main
+
+$ git add lib/applicant/history.dart
+$ g commit fix "resolve applicant history issue"
+Committed:
+  modified     lib/applicant/history.dart
+
+fix: resolve applicant history issue
 
 $ g switch main
 Switched to branch main (from HCM-37538-applicant-id-update)
@@ -66,13 +73,13 @@ Implemented:
 | `g status`                    | Show a concise summary of the repository state       |
 | `g new <ticket> [description]`| Create a branch for a new piece of work              |
 | `g switch <branch>`           | Switch to an existing branch                         |
+| `g commit <type> <message>`   | Commit what is staged                                |
 | `g help`                      | Show the full command reference (`g --help` works too) |
 
 Planned, declared in the command surface but intentionally not implemented yet:
 
 | Command                       | Milestone | Intent                                          |
 | ----------------------------- | --------- | ----------------------------------------------- |
-| `g commit <type> <message>`   | v0.3      | Record a commit from the staged changes          |
 | `g push`                      | v0.3      | Push the current branch to its upstream          |
 | `g sync`                      | v0.4      | Update the current branch from upstream/base     |
 | `g undo`                      | v0.5      | Undo the latest commit while keeping its changes |
@@ -121,6 +128,37 @@ safe, so `g` notes it and lets git decide; if changes would be overwritten git
 refuses and that refusal is reported unchanged. `g` will not discard work to
 make a switch succeed.
 
+### `g commit <type> <message>`
+
+```console
+$ g commit fix "resolve applicant history issue"
+Committed:
+  modified     lib/applicant/history.dart
+
+fix: resolve applicant history issue
+```
+
+The type must be one of `feat`, `fix`, `ui`, `refactor`, `test`, `docs`,
+`chore`, `ci` or `perf`; it is lower-cased and joined to the message with `: `.
+
+**Only what is already staged is committed.** `g` never runs `git add` for you.
+"Commit everything" is convenient right up to the moment it sweeps up a stray
+file, and there is no undo for a commit that should never have existed, so the
+index is treated as your explicit decision about what belongs in this commit. If
+nothing is staged, `g commit` fails and says how many files are waiting and how
+to stage them, rather than guessing.
+
+**The message is yours.** `g` adds the type and trims surrounding whitespace; it
+never rewords, re-cases or generates the text. A message that is empty or spans
+more than one line is rejected rather than mangled into shape.
+
+Only `git commit -m` is run, so everything else about committing is unchanged:
+hooks run, hooks can reject the commit, and the index is left alone when they do.
+Unlike the branch workflows, `g commit` does not require an idle repository —
+committing is how a paused merge is finished. A commit made on a detached HEAD is
+allowed, because git allows it, but it is reported, because such a commit is
+reachable only from `HEAD`.
+
 
 ### Exit codes
 
@@ -135,8 +173,9 @@ make a switch succeed.
 ```
 cmd/g            entry point: wires the layers together
 internal/command command definitions, dispatch, and help
-internal/workflow UI-independent operations: `g status`, `g new`, `g switch`
+internal/workflow UI-independent operations: status, branch and commit work
 internal/branch  branch naming policy: slugging and ref validation
+internal/commit  commit message policy: types and subject validation
 internal/git     git client: runs git and parses its machine-readable output
 internal/github  boundary for `gh` based GitHub operations (availability only)
 internal/config  optional user configuration, with defaults
@@ -177,9 +216,11 @@ Two rules keep the design honest:
 itself, so workflow behaviour is tested with a fake and no processes are spawned.
 Process execution is funnelled through a single `process.Runner` seam.
 
-Branch naming lives in `internal/branch` as a pure policy: no processes, no
-filesystem, so the naming rules are testable in isolation and reusable by any
-front end.
+Branch naming lives in `internal/branch` and the commit message convention in
+`internal/commit`. Both are pure policies — no processes, no filesystem — so the
+rules are testable in isolation and reusable by any front end. The command layer
+validates them in order to report a usage error (exit 2), and the workflow layer
+validates them again so that every caller gets the same guarantees.
 
 ## Safety philosophy
 
@@ -201,9 +242,13 @@ what they will do on your behalf:
 - `g switch` matches branch names exactly. Guessing at a branch that does not
   exist risks putting work on the wrong branch, which is much harder to notice
   than an error.
-- Neither command touches the network. `g new` uses the base branch as it stands
-  locally, so starting work never depends on what a remote happens to be
-  serving.
+- `g new` and `g switch` never touch the network. `g new` uses the base branch as
+  it stands locally, so starting work never depends on what a remote happens to
+  be serving.
+- `g commit` never stages files. It commits the index and nothing else, so it
+  cannot sweep an unrelated file into a commit that has no undo.
+- `g commit` never rewrites your message and never passes `--no-verify`, so your
+  hooks keep the power to reject a commit.
 
 Commands that discard work do not exist yet, so no confirmation machinery exists
 yet either. It will be added with the first command that needs it (`g push
@@ -266,8 +311,8 @@ mocks lives in `internal/*`.
 `tests/` holds integration tests that do run real Git against throwaway
 repositories in `t.TempDir()`: repository detection, clean and dirty trees,
 staged versus unstaged changes, untracked files, conflicts, detached HEAD,
-upstream tracking, ahead/behind counts, branch creation and switching, the
-paused-operation states, and the not-a-repository case. They skip themselves in
+upstream tracking, ahead/behind counts, branch creation and switching, commit
+recording, the paused-operation states, and the not-a-repository case. They skip themselves in
 short mode and when `git` is missing.
 
 ## Roadmap

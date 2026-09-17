@@ -9,9 +9,9 @@ import (
 
 // Commands returns the command surface in help order.
 //
-// status, new, switch and help run today. The remaining commands are declared
-// so the intended surface is visible in `g --help` and so invoking one fails
-// with a clear message instead of pretending to work.
+// status, new, switch, commit and help run today. The remaining commands are
+// declared so the intended surface is visible in `g --help` and so invoking
+// one fails with a clear message instead of pretending to work.
 func Commands() []Command {
 	return []Command{
 		statusCommand,
@@ -57,14 +57,15 @@ var switchCommand = Command{
 	Run:     runSwitch,
 }
 
+var commitCommand = Command{
+	Name:    "commit",
+	Usage:   "g commit <type> <message>",
+	Summary: "Record the staged changes as a commit",
+	Run:     runCommit,
+}
+
 // Planned commands: declarations only, no behaviour.
 var (
-	commitCommand = Command{
-		Name:    "commit",
-		Usage:   "g commit <type> <message>",
-		Summary: "Record a commit from the staged changes",
-		Roadmap: "v0.3",
-	}
 	pushCommand = Command{
 		Name:    "push",
 		Usage:   "g push",

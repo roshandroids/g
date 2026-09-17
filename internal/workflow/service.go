@@ -30,6 +30,8 @@ type Repository interface {
 	CreateBranch(ctx context.Context, dir, name, base string) error
 	// SwitchBranch switches to an existing branch.
 	SwitchBranch(ctx context.Context, dir, name string) error
+	// Commit records the staged changes with message.
+	Commit(ctx context.Context, dir, message string) error
 }
 
 // Options configures a Service.
