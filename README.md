@@ -74,13 +74,13 @@ Implemented:
 | `g new <ticket> [description]`| Create a branch for a new piece of work              |
 | `g switch <branch>`           | Switch to an existing branch                         |
 | `g commit <type> <message>`   | Commit what is staged                                |
+| `g push [--force]`            | Push the current branch to its upstream              |
 | `g help`                      | Show the full command reference (`g --help` works too) |
 
 Planned, declared in the command surface but intentionally not implemented yet:
 
 | Command                       | Milestone | Intent                                          |
 | ----------------------------- | --------- | ----------------------------------------------- |
-| `g push`                      | v0.3      | Push the current branch to its upstream          |
 | `g sync`                      | v0.4      | Update the current branch from upstream/base     |
 | `g undo`                      | v0.5      | Undo the latest commit while keeping its changes |
 | `g clean`                     | v0.5      | Delete local branches that are already merged    |
@@ -159,6 +159,52 @@ committing is how a paused merge is finished. A commit made on a detached HEAD i
 allowed, because git allows it, but it is reported, because such a commit is
 reachable only from `HEAD`.
 
+### `g push [--force]`
+
+```console
+$ g push
+Pushed HCM-37538-applicant-id-update to origin/HCM-37538-applicant-id-update
+```
+
+A branch that already tracks a remote is pushed to it with a plain `git push`,
+naming nothing, because git already knows which remote and branch are meant.
+
+A branch that tracks **nothing** is not pushed on a guess. Publishing a new
+branch is visible to everyone, so it is offered first, and nothing leaves the
+machine until you agree:
+
+```console
+$ g push
+No upstream is set for this branch. Push it and set one? [y/N] y
+Pushed HCM-37538-applicant-id-update and set upstream to origin/HCM-37538-applicant-id-update
+```
+
+Declining is a deliberate choice, but the push still did not happen, so `g`
+exits non-zero and says so rather than reporting a success that did not occur.
+With no terminal to ask on — a script, a pipe, a future GUI — the answer is
+treated as no.
+
+**`--force` is not a shorthand for "push harder".** It is a separate, explicit
+mode because it is the one operation here that can destroy somebody else's work,
+and it is never part of a normal `g push`. It always asks first:
+
+```console
+$ g push --force
+Force-push with --force-with-lease, replacing the remote branch if it has moved? [y/N] y
+Force-pushed HCM-37538-applicant-id-update to origin/HCM-37538-applicant-id-update (--force-with-lease)
+```
+
+The underlying command is always `git push --force-with-lease`, which still
+refuses to overwrite a remote branch that has moved since your last fetch. A
+plain `--force` is not reachable at all: no combination of options produces it,
+which is asserted by a test that enumerates them.
+
+Force-pushing a branch with no upstream is refused outright — there would be no
+remote branch to compare against, so it could only be a blind overwrite.
+
+A rejected push is reported with git's own explanation and left there. When the
+remote has moved on, the answer is to fetch and integrate, and that is your call
+rather than something `g` gets to decide.
 
 ### Exit codes
 
@@ -176,6 +222,7 @@ internal/command command definitions, dispatch, and help
 internal/workflow UI-independent operations: status, branch and commit work
 internal/branch  branch naming policy: slugging and ref validation
 internal/commit  commit message policy: types and subject validation
+internal/prompt  the only place that asks the user a question
 internal/git     git client: runs git and parses its machine-readable output
 internal/github  boundary for `gh` based GitHub operations (availability only)
 internal/config  optional user configuration, with defaults
@@ -249,10 +296,22 @@ what they will do on your behalf:
   cannot sweep an unrelated file into a commit that has no undo.
 - `g commit` never rewrites your message and never passes `--no-verify`, so your
   hooks keep the power to reject a commit.
+- `g push` never force-pushes on its own. `--force` is a separate, explicit mode
+  that asks first, and even then only `--force-with-lease` is used.
+- `g push` does not publish a branch that tracks nothing until you have said so,
+  because a new branch on the remote is visible to everyone.
 
-Commands that discard work do not exist yet, so no confirmation machinery exists
-yet either. It will be added with the first command that needs it (`g push
---force`, `g undo`, `g clean`) rather than speculatively.
+Confirmation lives at the edge of the program. Workflows expose a flag such as
+"force this push" and treat it as the caller's assertion that the user agreed;
+`internal/prompt` is the only place that actually asks. A missing terminal counts
+as a refusal, so a command that needs an answer fails closed rather than assuming
+consent.
+
+`confirmDestructive` is still not consulted by any command. It is documented as
+governing operations that discard *local* work — commits and uncommitted changes
+— and none of the commands so far do that. Force push overwrites remote history
+rather than local work, which is why it always asks instead of deferring to the
+setting. `g undo` and `g clean` are where it will apply.
 
 ## Configuration
 
@@ -312,7 +371,8 @@ mocks lives in `internal/*`.
 repositories in `t.TempDir()`: repository detection, clean and dirty trees,
 staged versus unstaged changes, untracked files, conflicts, detached HEAD,
 upstream tracking, ahead/behind counts, branch creation and switching, commit
-recording, the paused-operation states, and the not-a-repository case. They skip themselves in
+recording, pushing and force-with-lease refusals, the paused-operation states,
+and the not-a-repository case. They skip themselves in
 short mode and when `git` is missing.
 
 ## Roadmap
