@@ -33,6 +33,9 @@ type fakeRepository struct {
 
 	commitCalls []string
 	commitErr   error
+
+	pushCalls []git.PushOptions
+	pushErr   error
 }
 
 // remoteBranchCall records one RemoteBranchExists question.
@@ -90,4 +93,9 @@ func (f *fakeRepository) SwitchBranch(_ context.Context, _, name string) error {
 func (f *fakeRepository) Commit(_ context.Context, _, message string) error {
 	f.commitCalls = append(f.commitCalls, message)
 	return f.commitErr
+}
+
+func (f *fakeRepository) Push(_ context.Context, _ string, opts git.PushOptions) error {
+	f.pushCalls = append(f.pushCalls, opts)
+	return f.pushErr
 }

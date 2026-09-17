@@ -27,7 +27,50 @@ var (
 	ErrOperationInProgress = errors.New("another Git operation is in progress")
 	// ErrNothingStaged reports that there is nothing in the index to commit.
 	ErrNothingStaged = errors.New("nothing is staged")
+	// ErrNoRemote reports that the repository has no remote to push to.
+	ErrNoRemote = errors.New("no remote is configured")
+	// ErrNoUpstream reports that the current branch tracks no remote branch.
+	ErrNoUpstream = errors.New("the branch has no upstream")
 )
+
+// NoRemoteError reports that there is nowhere to push to.
+type NoRemoteError struct{}
+
+func (e *NoRemoteError) Error() string {
+	return "no remote is configured; add one with `git remote add origin <url>`"
+}
+
+// Is reports the error as ErrNoRemote.
+func (e *NoRemoteError) Is(target error) bool { return target == ErrNoRemote }
+
+// NoUpstreamError reports that the current branch does not track a remote
+// branch.
+type NoUpstreamError struct {
+	// Branch is the branch that has no upstream.
+	Branch string
+}
+
+func (e *NoUpstreamError) Error() string {
+	return fmt.Sprintf("branch %q has no upstream yet; run `g push` to publish it first", e.Branch)
+}
+
+// Is reports the error as ErrNoUpstream.
+func (e *NoUpstreamError) Is(target error) bool { return target == ErrNoUpstream }
+
+// AmbiguousRemoteError reports that no remote could be chosen for a branch that
+// needs one.
+type AmbiguousRemoteError struct {
+	// Available lists the configured remote names.
+	Available []string
+}
+
+func (e *AmbiguousRemoteError) Error() string {
+	return fmt.Sprintf("cannot choose a remote: none is called \"origin\", and there are several (%s); "+
+		"set one with `git push --set-upstream <remote> <branch>`", list(e.Available))
+}
+
+// Is reports the error as ErrNoRemote.
+func (e *AmbiguousRemoteError) Is(target error) bool { return target == ErrNoRemote }
 
 // BranchExistsError reports that the branch to create is already present.
 type BranchExistsError struct {

@@ -12,6 +12,7 @@ import (
 
 	"github.com/roshandroids/g/internal/config"
 	"github.com/roshandroids/g/internal/github"
+	"github.com/roshandroids/g/internal/prompt"
 	"github.com/roshandroids/g/internal/workflow"
 )
 
@@ -36,6 +37,8 @@ type Service interface {
 	Switch(ctx context.Context, dir string, req workflow.SwitchRequest) (workflow.SwitchResult, error)
 	// Commit records the staged changes.
 	Commit(ctx context.Context, dir string, req workflow.CommitRequest) (workflow.CommitResult, error)
+	// Push sends the current branch to its remote.
+	Push(ctx context.Context, dir string, req workflow.PushRequest) (workflow.PushResult, error)
 }
 
 // Env carries the dependencies and streams a command needs.
@@ -44,6 +47,10 @@ type Env struct {
 	Service Service
 	// GitHub is the GitHub boundary; commands check Available before using it.
 	GitHub github.Client
+	// Prompt asks the user to confirm an action. A nil Prompt refuses every
+	// confirmation, so a command that needs one fails closed rather than
+	// assuming consent.
+	Prompt prompt.Prompter
 	// Config is the user configuration.
 	Config config.Config
 	// Dir is the directory commands operate on.
@@ -52,6 +59,14 @@ type Env struct {
 	Out io.Writer
 	// Err receives error output.
 	Err io.Writer
+}
+
+// Confirm asks the user to confirm an action.
+func (e *Env) Confirm(ctx context.Context, question string) (bool, error) {
+	if e.Prompt == nil {
+		return false, nil
+	}
+	return e.Prompt.Confirm(ctx, question)
 }
 
 // Command is one entry of the g command surface.
