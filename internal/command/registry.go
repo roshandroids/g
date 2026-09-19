@@ -9,9 +9,8 @@ import (
 
 // Commands returns the command surface in help order.
 //
-// status, new, switch, commit, push, sync and help run today. The remaining
-// commands are declared so the intended surface is visible in `g --help` and so
-// invoking one fails with a clear message instead of pretending to work.
+// Every command listed here runs today. Invoking an unknown name fails with a
+// usage error rather than pretending to work.
 func Commands() []Command {
 	return []Command{
 		statusCommand,
@@ -21,6 +20,8 @@ func Commands() []Command {
 		commitCommand,
 		pushCommand,
 		syncCommand,
+		continueCommand,
+		abortCommand,
 		undoCommand,
 		cleanCommand,
 	}
@@ -78,21 +79,33 @@ var syncCommand = Command{
 	Run:     runSync,
 }
 
-// Planned commands: declarations only, no behaviour.
-var (
-	undoCommand = Command{
-		Name:    "undo",
-		Usage:   "g undo",
-		Summary: "Undo the latest commit while keeping its changes",
-		Roadmap: "v0.5",
-	}
-	cleanCommand = Command{
-		Name:    "clean",
-		Usage:   "g clean",
-		Summary: "Delete local branches that are already merged",
-		Roadmap: "v0.5",
-	}
-)
+var continueCommand = Command{
+	Name:    "continue",
+	Usage:   "g continue",
+	Summary: "Continue a paused rebase, merge, or cherry-pick",
+	Run:     runContinue,
+}
+
+var abortCommand = Command{
+	Name:    "abort",
+	Usage:   "g abort",
+	Summary: "Abort a paused rebase, merge, or cherry-pick",
+	Run:     runAbort,
+}
+
+var undoCommand = Command{
+	Name:    "undo",
+	Usage:   "g undo [count]",
+	Summary: "Undo recent commits while keeping their changes staged",
+	Run:     runUndo,
+}
+
+var cleanCommand = Command{
+	Name:    "clean",
+	Usage:   "g clean [--apply]",
+	Summary: "Preview or delete stale local branches",
+	Run:     runClean,
+}
 
 // helpName is the command word for the help command.
 const helpName = "help"
