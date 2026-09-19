@@ -81,13 +81,13 @@ Implemented:
 | `g switch <branch>`           | Switch to an existing branch                         |
 | `g commit <type> <message>`   | Commit what is staged                                |
 | `g push [--force]`            | Push the current branch to its upstream              |
+| `g sync`                      | Update the current branch from its base branch       |
 | `g help`                      | Show the full command reference (`g --help` works too) |
 
 Planned, declared in the command surface but intentionally not implemented yet:
 
 | Command                       | Milestone | Intent                                          |
 | ----------------------------- | --------- | ----------------------------------------------- |
-| `g sync`                      | v0.4      | Update the current branch from upstream/base     |
 | `g undo`                      | v0.5      | Undo the latest commit while keeping its changes |
 | `g clean`                     | v0.5      | Delete local branches that are already merged    |
 
@@ -112,8 +112,8 @@ Shows the state the other workflows actually act on, and nothing else:
 This is deliberately not a replacement for `git status`. The full output already
 exists and is better at being exhaustive — it lists hints, ignored files and
 directory rollups that a summary has no business reproducing. `g status` answers
-the narrower question of what `g new`, `g switch`, `g commit` and `g push` are
-about to do.
+the narrower question of what `g new`, `g switch`, `g commit`, `g push` and
+`g sync` are about to do.
 
 The operation line exists because of a trap worth naming. While a rebase is
 paused, `git branch --show-current` is **empty** — the branch is detached for the
@@ -250,6 +250,55 @@ A rejected push is reported with git's own explanation and left there. When the
 remote has moved on, the answer is to fetch and integrate, and that is your call
 rather than something `g` gets to decide.
 
+### `g sync`
+
+```console
+$ g sync
+Syncing HCM-37538-applicant-id-update
+
+Base: main
+Fetching origin...
+Updating main...
+Rebasing HCM-37538-applicant-id-update onto main...
+
+Sync complete.
+
+Branch: HCM-37538-applicant-id-update
+Base:   main
+Ahead:  3
+Behind: 0
+```
+
+`g sync` is the state-aware replacement for the usual "stash, update main, rebase,
+stash pop" sequence. It inspects the repository, refuses to start when another
+Git operation is already paused, picks a base branch, fetches when a remote
+exists, fast-forwards the local base when that is safe, rebases the current
+feature branch onto that base, and restores any local changes it had to preserve.
+
+**Base branch priority:** configured `defaultBaseBranch`, then the remote's
+default branch when it can be read from `origin/HEAD`, then local `main`, then
+local `master`. The current branch is never rebased onto itself: when you are
+already on the base branch, `g sync` only updates that branch from the remote.
+
+**Local changes are never discarded.** Staged, unstaged and untracked files are
+stashed with `git stash push` (including untracked files when present) before a
+rebase or a fast-forward of the checked-out base, then restored afterwards. If
+restoration conflicts, the stash entry is kept and the error explains how to
+recover. `git stash clear` is never used.
+
+**Conflicts stop the workflow.** A conflicted rebase is left exactly as Git left
+it. `g` prints the `git add` / `git rebase --continue` and `git rebase --abort`
+commands; it does not resolve, continue or abort for you. (`g continue` and
+`g abort` are later milestones.)
+
+**`g sync` does not push.** After a rebase the feature branch may need
+`g push --force` (which still means `--force-with-lease` and still asks first).
+`g sync` only warns that history was rewritten — it never force-pushes.
+
+It also refuses divergent base histories (local and remote base both have unique
+commits) rather than rewriting the base, and it fails loudly when fetch cannot
+reach the remote so you know the base was not refreshed.
+
 ### Exit codes
 
 | Code | Meaning                                                                 |
@@ -263,7 +312,7 @@ rather than something `g` gets to decide.
 ```
 cmd/g            entry point: wires the layers together
 internal/command command definitions, dispatch, and help
-internal/workflow UI-independent operations: status, branch, commit and push work
+internal/workflow UI-independent operations: status, branch, commit, push and sync
 internal/branch  branch naming policy: slugging and ref validation
 internal/commit  commit message policy: types and subject validation
 internal/prompt  the only place that asks the user a question
@@ -345,6 +394,9 @@ what they will do on your behalf:
 - `g push` publishes a branch with no upstream via `git push -u`, so you never
   have to type the remote and branch name. Several remotes and no `origin` is
   refused rather than guessed.
+- `g sync` never pushes, never force-pushes, never aborts an in-progress Git
+  operation, and never discards local changes. Conflicted rebases and conflicted
+  stash restorations are left recoverable, with the stash kept when restore fails.
 
 Confirmation lives at the edge of the program. Workflows expose a flag such as
 "force this push" and treat it as the caller's assertion that the user agreed;
@@ -383,9 +435,10 @@ Only the fields present in the file override the defaults, and unknown fields ar
 ignored. A file that cannot be read or parsed is reported on stderr and `g`
 continues with the defaults, so a typo cannot lock you out of read-only commands.
 
-- **`defaultBaseBranch`** is the branch `g new` starts work from, tried before
-  the `main`/`master` fallbacks. Set it to `develop` in a repository whose trunk
-  is called something else.
+- **`defaultBaseBranch`** is the branch `g new` starts work from and the first
+  candidate `g sync` uses as its integration base, tried before the remote
+  default and the `main`/`master` fallbacks. Set it to `develop` in a repository
+  whose trunk is called something else.
 - **`confirmDestructive`** requires explicit confirmation before an operation
   discards commits or uncommitted work.
 - **`branchNaming.separator`** joins the issue key and the description slug. One
@@ -396,8 +449,9 @@ continues with the defaults, so a typo cannot lock you out of read-only commands
   issue key is never shortened.
 
 `defaultBaseBranch`, `branchNaming.separator` and `branchNaming.maxLength` are
-consumed by `g new`. `confirmDestructive` is not consumed yet: it governs
-operations that discard *local* work (`g undo`, `g clean`), not force push.
+consumed by `g new` and `g sync`. `confirmDestructive` is not consumed yet: it
+governs operations that discard *local* work (`g undo`, `g clean`), not force
+push.
 
 ## Testing
 
@@ -416,9 +470,10 @@ mocks lives in `internal/*`.
 repositories in `t.TempDir()`: repository detection, clean and dirty trees,
 staged versus unstaged changes, untracked files, conflicts, detached HEAD,
 upstream tracking, ahead/behind counts, branch creation and switching, commit
-recording, pushing and force-with-lease refusals, the paused-operation states,
-and the not-a-repository case. They skip themselves in
-short mode and when `git` is missing.
+recording, pushing and force-with-lease refusals, safe synchronisation (dirty
+trees, rebase conflicts, stash restore conflicts, divergent bases, paused
+operations), the paused-operation states, and the not-a-repository case. They
+skip themselves in short mode and when `git` is missing.
 
 ## Roadmap
 
@@ -429,7 +484,7 @@ state, `g status`
 
 **V0.3 Commit & Push** — `g commit`, `g push`
 
-**V0.4 Safe Synchronization** — `g sync`
+**V0.4 Safe Synchronization** — `g sync` ✅
 
 **V0.5 Recovery** — `g undo`, `g clean`
 

@@ -9,8 +9,8 @@ import (
 
 // Commands returns the command surface in help order.
 //
-// status, new, switch, commit, push and help run today. The remaining commands
-// are declared so the intended surface is visible in `g --help` and so
+// status, new, switch, commit, push, sync and help run today. The remaining
+// commands are declared so the intended surface is visible in `g --help` and so
 // invoking one fails with a clear message instead of pretending to work.
 func Commands() []Command {
 	return []Command{
@@ -71,14 +71,15 @@ var pushCommand = Command{
 	Run:     runPush,
 }
 
+var syncCommand = Command{
+	Name:    "sync",
+	Usage:   "g sync",
+	Summary: "Update the current branch from its base branch",
+	Run:     runSync,
+}
+
 // Planned commands: declarations only, no behaviour.
 var (
-	syncCommand = Command{
-		Name:    "sync",
-		Usage:   "g sync",
-		Summary: "Update the current branch from its upstream or base branch",
-		Roadmap: "v0.4",
-	}
 	undoCommand = Command{
 		Name:    "undo",
 		Usage:   "g undo",
