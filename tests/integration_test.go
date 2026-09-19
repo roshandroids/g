@@ -187,6 +187,95 @@ func TestStatusOutsideRepository(t *testing.T) {
 	}
 }
 
+func TestStatusReportsTheRepositoryRoot(t *testing.T) {
+	requireGit(t)
+
+	dir := initRepository(t, "README.md")
+	nested := filepath.Join(dir, "lib", "deep")
+	if err := os.MkdirAll(nested, 0o700); err != nil {
+		t.Fatalf("creating %s: %v", nested, err)
+	}
+
+	// The root is what a shell `cd` needs, so it has to be the work tree rather
+	// than the directory g was run from.
+	status := statusOf(t, nested)
+	if want := resolved(t, dir); status.Root != want {
+		t.Errorf("Root = %q, want %q", status.Root, want)
+	}
+}
+
+// git branch --show-current is empty during a rebase, so without the operation
+// state a paused rebase is indistinguishable from a detached HEAD.
+func TestStatusReportsAPausedRebase(t *testing.T) {
+	requireGit(t)
+
+	dir := initRepository(t, "README.md")
+	startConflictingRebase(t, dir)
+
+	status := statusOf(t, dir)
+
+	if status.Operation != git.OperationRebase {
+		t.Errorf("Operation = %q, want %q", status.Operation, git.OperationRebase)
+	}
+	if !status.Detached {
+		t.Error("Detached = false, want true so the operation is what explains the state")
+	}
+	if status.Clean() {
+		t.Error("Clean() = true, want false with an unresolved conflict")
+	}
+}
+
+func TestStatusReportsAPausedMerge(t *testing.T) {
+	requireGit(t)
+
+	dir := initRepository(t, "README.md")
+	startConflictingMerge(t, dir)
+
+	status := statusOf(t, dir)
+
+	if status.Operation != git.OperationMerge {
+		t.Errorf("Operation = %q, want %q", status.Operation, git.OperationMerge)
+	}
+	// A merge does not detach HEAD, which is why the operation cannot be
+	// inferred from the branch alone.
+	if status.Detached {
+		t.Error("Detached = true, want false during a merge")
+	}
+}
+
+func TestStatusReportsAPausedCherryPick(t *testing.T) {
+	requireGit(t)
+
+	dir := initRepository(t, "README.md")
+	runGit(t, dir, "checkout", "-q", "-b", "feature")
+	writeFile(t, dir, "README.md", "feature\n")
+	runGit(t, dir, "commit", "-qam", "feature change")
+
+	runGit(t, dir, "checkout", "-q", "main")
+	writeFile(t, dir, "README.md", "main\n")
+	runGit(t, dir, "commit", "-qam", "main change")
+
+	if out, err := tryGit(dir, "cherry-pick", "feature"); err == nil {
+		t.Fatalf("cherry-pick unexpectedly succeeded:\n%s", out)
+	}
+
+	status := statusOf(t, dir)
+
+	if status.Operation != git.OperationCherryPick {
+		t.Errorf("Operation = %q, want %q", status.Operation, git.OperationCherryPick)
+	}
+}
+
+func TestStatusReportsNoOperationWhenIdle(t *testing.T) {
+	requireGit(t)
+
+	dir := initRepository(t, "README.md")
+
+	if got := statusOf(t, dir).Operation; got != git.OperationNone {
+		t.Errorf("Operation = %q, want none for an idle repository", got)
+	}
+}
+
 // statusOf reports the state of dir, failing the test on any error.
 func statusOf(t *testing.T, dir string) workflow.Status {
 	t.Helper()

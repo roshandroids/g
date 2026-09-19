@@ -17,6 +17,7 @@ import (
 	"github.com/roshandroids/g/internal/git"
 	"github.com/roshandroids/g/internal/github"
 	"github.com/roshandroids/g/internal/process"
+	"github.com/roshandroids/g/internal/prompt"
 	"github.com/roshandroids/g/internal/workflow"
 )
 
@@ -53,6 +54,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 			BranchMaxLength:   cfg.BranchNaming.MaxLength,
 		}),
 		GitHub: github.NewExecClient(runner),
+		Prompt: prompt.New(os.Stdin, stderr),
 		Config: cfg,
 		Dir:    dir,
 		Out:    stdout,

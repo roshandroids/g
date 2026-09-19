@@ -32,6 +32,8 @@ type Repository interface {
 	SwitchBranch(ctx context.Context, dir, name string) error
 	// Commit records the staged changes with message.
 	Commit(ctx context.Context, dir, message string) error
+	// Push sends the current branch to its remote.
+	Push(ctx context.Context, dir string, opts git.PushOptions) error
 }
 
 // Options configures a Service.

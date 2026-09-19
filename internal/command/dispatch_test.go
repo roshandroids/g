@@ -34,6 +34,11 @@ type fakeService struct {
 	commitRes   workflow.CommitResult
 	commitErr   error
 	commitCalls int
+
+	pushReq   workflow.PushRequest
+	pushRes   workflow.PushResult
+	pushErr   error
+	pushCalls int
 }
 
 func (f *fakeService) Status(_ context.Context, dir string) (workflow.Status, error) {
@@ -74,13 +79,25 @@ func (f *fakeService) Commit(_ context.Context, dir string, req workflow.CommitR
 	return f.commitRes, nil
 }
 
+func (f *fakeService) Push(_ context.Context, dir string, req workflow.PushRequest) (workflow.PushResult, error) {
+	f.dirs = append(f.dirs, dir)
+	f.pushCalls++
+	f.pushReq = req
+	// A branch with no upstream keeps reporting that until the caller agrees to
+	// create one, which is what the real workflow does.
+	if f.pushErr != nil && !req.CreateUpstream {
+		return workflow.PushResult{}, f.pushErr
+	}
+	return f.pushRes, nil
+}
+
 func TestRunWithoutArgumentsShowsShortHelp(t *testing.T) {
 	env, out, errOut := newEnv(&fakeService{})
 
 	if code := Run(context.Background(), env, nil); code != ExitOK {
 		t.Errorf("Run() = %d, want %d", code, ExitOK)
 	}
-	if !strings.Contains(out.String(), "Commands: status, help, new, switch, commit") {
+	if !strings.Contains(out.String(), "Commands: status, help, new, switch, commit, push") {
 		t.Errorf("Run() output = %q, want it to list the available commands", out.String())
 	}
 	if !strings.Contains(out.String(), "g --help") {
@@ -139,7 +156,7 @@ func TestRunRejectsUnknownFlag(t *testing.T) {
 }
 
 func TestRunReportsPlannedCommandsAsUnimplemented(t *testing.T) {
-	for _, name := range []string{"sync", "push", "undo", "clean"} {
+	for _, name := range []string{"sync", "undo", "clean"} {
 		t.Run(name, func(t *testing.T) {
 			service := &fakeService{}
 			env, out, errOut := newEnv(service)
