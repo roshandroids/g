@@ -17,9 +17,9 @@ var errNotPushed = errors.New("nothing was pushed")
 
 // runPush implements `g push`, and `g push --force`.
 //
-// A push that needs an upstream is discovered without side effects first, so
-// the confirmation happens before anything leaves the machine rather than
-// halfway through.
+// A normal push either uses the existing upstream or publishes the branch with
+// `-u`. Force is the only path that asks a question, and it asks before any
+// bytes leave the machine.
 func runPush(ctx context.Context, env *Env, args []string) error {
 	force, err := parsePushArgs(args)
 	if err != nil {
@@ -33,26 +33,6 @@ func runPush(ctx context.Context, env *Env, args []string) error {
 	}
 
 	result, err := env.Service.Push(ctx, env.Dir, workflow.PushRequest{Force: force})
-	if err == nil {
-		return output.RenderPush(env.Out, result)
-	}
-
-	// A branch with no upstream is a question rather than a failure: nothing
-	// has been pushed, and creating an upstream is a visible change to the
-	// remote, so g offers it instead of assuming it.
-	if force || !errors.Is(err, workflow.ErrNoUpstream) {
-		return err
-	}
-
-	confirmed, err := env.Confirm(ctx, "No upstream is set for this branch. Push it and set one?")
-	if err != nil {
-		return err
-	}
-	if !confirmed {
-		return errNotPushed
-	}
-
-	result, err = env.Service.Push(ctx, env.Dir, workflow.PushRequest{CreateUpstream: true})
 	if err != nil {
 		return err
 	}

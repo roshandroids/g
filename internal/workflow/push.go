@@ -14,13 +14,6 @@ type PushRequest struct {
 	// workflow cannot verify that, so it never sets the flag itself and never
 	// escalates to a plain --force.
 	Force bool
-	// CreateUpstream pushes a branch that tracks nothing and records the
-	// upstream as part of the push.
-	//
-	// Like Force, setting it asserts that the user agreed to a new branch
-	// appearing on the remote. Without it, a branch with no upstream is
-	// reported rather than pushed.
-	CreateUpstream bool
 }
 
 // PushResult describes the push that happened.
@@ -38,13 +31,14 @@ type PushResult struct {
 // Push sends the current branch to its remote.
 //
 // A branch that already tracks a remote is pushed to it. A branch that does not
-// is reported through ErrNoUpstream unless the caller has agreed to create one,
-// which keeps the decision to publish a new branch on the remote with the
-// person who has to live with it.
+// is published with `git push -u <remote> HEAD`, choosing "origin" when it
+// exists and the sole remote otherwise, so the user does not have to type the
+// remote and branch name.
 //
 // Force pushes are never automatic and never plain: the strongest thing
 // available is --force-with-lease, which still refuses to overwrite a remote
-// branch that has moved since the last fetch.
+// branch that has moved since the last fetch. A force push with no upstream is
+// refused, because there would be nothing to compare against.
 func (s *Service) Push(ctx context.Context, dir string, req PushRequest) (PushResult, error) {
 	state, err := s.requireIdle(ctx, dir)
 	if err != nil {
@@ -63,11 +57,9 @@ func (s *Service) Push(ctx context.Context, dir string, req PushRequest) (PushRe
 		return s.pushToUpstream(ctx, dir, state, req)
 	}
 
-	// The branch tracks nothing. A force push has no remote branch to compare
-	// against, so it could only be a plain overwrite, and publishing a new
-	// branch is a visible change the caller has to have agreed to. Both cases
-	// stop here without pushing anything.
-	if req.Force || !req.CreateUpstream {
+	// A force push has no remote branch to compare against, so it could only be
+	// a plain overwrite. Stop without pushing anything.
+	if req.Force {
 		return PushResult{}, &NoUpstreamError{Branch: state.Branch}
 	}
 

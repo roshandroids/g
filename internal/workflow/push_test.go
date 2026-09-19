@@ -48,33 +48,15 @@ func TestServicePushToAnExistingUpstream(t *testing.T) {
 	}
 }
 
-// A branch that tracks nothing is not pushed on a guess: the caller has to
-// agree to publishing a new branch first.
-func TestServicePushWithoutAnUpstreamAsksFirst(t *testing.T) {
+// A branch that tracks nothing is published with -u, so the user never has to
+// type the remote and branch name.
+func TestServicePushCreatesAnUpstreamWhenMissing(t *testing.T) {
 	repo := &fakeRepository{
 		status:  git.Status{Root: branchTestDir, Branch: "HCM-1-work"},
 		remotes: []string{"origin"},
 	}
 
-	_, err := NewService(repo, Options{}).Push(context.Background(), branchTestDir, PushRequest{})
-	if !errors.Is(err, ErrNoUpstream) {
-		t.Fatalf("Push() error = %v, want ErrNoUpstream", err)
-	}
-	if !strings.Contains(err.Error(), "HCM-1-work") {
-		t.Errorf("Push() error = %v, want it to name the branch", err)
-	}
-	if len(repo.pushCalls) != 0 {
-		t.Errorf("Push calls = %+v, want nothing pushed before the user agreed", repo.pushCalls)
-	}
-}
-
-func TestServicePushCreatingAnUpstream(t *testing.T) {
-	repo := &fakeRepository{
-		status:  git.Status{Root: branchTestDir, Branch: "HCM-1-work"},
-		remotes: []string{"origin"},
-	}
-
-	result, err := NewService(repo, Options{}).Push(context.Background(), branchTestDir, PushRequest{CreateUpstream: true})
+	result, err := NewService(repo, Options{}).Push(context.Background(), branchTestDir, PushRequest{})
 	if err != nil {
 		t.Fatalf("Push() error = %v, want nil", err)
 	}
@@ -112,7 +94,7 @@ func TestServicePushChoosesTheRemote(t *testing.T) {
 				remotes: test.remotes,
 			}
 
-			result, err := NewService(repo, Options{}).Push(context.Background(), branchTestDir, PushRequest{CreateUpstream: true})
+			result, err := NewService(repo, Options{}).Push(context.Background(), branchTestDir, PushRequest{})
 			if test.wantErr {
 				if !errors.Is(err, ErrNoRemote) {
 					t.Fatalf("Push() error = %v, want ErrNoRemote for an ambiguous choice", err)
@@ -185,7 +167,7 @@ func TestServicePushForceWithoutAnUpstream(t *testing.T) {
 		remotes: []string{"origin"},
 	}
 
-	_, err := NewService(repo, Options{}).Push(context.Background(), branchTestDir, PushRequest{Force: true, CreateUpstream: true})
+	_, err := NewService(repo, Options{}).Push(context.Background(), branchTestDir, PushRequest{Force: true})
 	if !errors.Is(err, ErrNoUpstream) {
 		t.Fatalf("Push() error = %v, want ErrNoUpstream", err)
 	}

@@ -20,6 +20,9 @@ Committed:
 
 fix: resolve applicant history issue
 
+$ g push
+Pushed HCM-37538-applicant-id-update to origin/HCM-37538-applicant-id-update
+
 $ g switch main
 Switched to branch main (from HCM-37538-applicant-id-update)
 ```
@@ -209,23 +212,19 @@ $ g push
 Pushed HCM-37538-applicant-id-update to origin/HCM-37538-applicant-id-update
 ```
 
-A branch that already tracks a remote is pushed to it with a plain `git push`,
-naming nothing, because git already knows which remote and branch are meant.
+A branch that already tracks a remote is pushed with a plain `git push`, naming
+nothing, because git already knows which remote and branch are meant.
 
-A branch that tracks **nothing** is not pushed on a guess. Publishing a new
-branch is visible to everyone, so it is offered first, and nothing leaves the
-machine until you agree:
+A branch that tracks **nothing** is published with `git push -u <remote> HEAD`.
+`origin` is preferred when it exists; a sole remote of any other name is used as
+is. Several remotes and no `origin` is refused rather than guessed, because the
+wrong remote is harder to notice than an error. The result reports that the
+upstream was set:
 
 ```console
 $ g push
-No upstream is set for this branch. Push it and set one? [y/N] y
 Pushed HCM-37538-applicant-id-update and set upstream to origin/HCM-37538-applicant-id-update
 ```
-
-Declining is a deliberate choice, but the push still did not happen, so `g`
-exits non-zero and says so rather than reporting a success that did not occur.
-With no terminal to ask on — a script, a pipe, a future GUI — the answer is
-treated as no.
 
 **`--force` is not a shorthand for "push harder".** It is a separate, explicit
 mode because it is the one operation here that can destroy somebody else's work,
@@ -243,7 +242,9 @@ plain `--force` is not reachable at all: no combination of options produces it,
 which is asserted by a test that enumerates them.
 
 Force-pushing a branch with no upstream is refused outright — there would be no
-remote branch to compare against, so it could only be a blind overwrite.
+remote branch to compare against, so it could only be a blind overwrite. With no
+terminal to ask on — a script, a pipe, a future GUI — a force confirmation is
+treated as no.
 
 A rejected push is reported with git's own explanation and left there. When the
 remote has moved on, the answer is to fetch and integrate, and that is your call
@@ -262,7 +263,7 @@ rather than something `g` gets to decide.
 ```
 cmd/g            entry point: wires the layers together
 internal/command command definitions, dispatch, and help
-internal/workflow UI-independent operations: status, branch and commit work
+internal/workflow UI-independent operations: status, branch, commit and push work
 internal/branch  branch naming policy: slugging and ref validation
 internal/commit  commit message policy: types and subject validation
 internal/prompt  the only place that asks the user a question
@@ -341,8 +342,9 @@ what they will do on your behalf:
   hooks keep the power to reject a commit.
 - `g push` never force-pushes on its own. `--force` is a separate, explicit mode
   that asks first, and even then only `--force-with-lease` is used.
-- `g push` does not publish a branch that tracks nothing until you have said so,
-  because a new branch on the remote is visible to everyone.
+- `g push` publishes a branch with no upstream via `git push -u`, so you never
+  have to type the remote and branch name. Several remotes and no `origin` is
+  refused rather than guessed.
 
 Confirmation lives at the edge of the program. Workflows expose a flag such as
 "force this push" and treat it as the caller's assertion that the user agreed;
@@ -394,8 +396,8 @@ continues with the defaults, so a typo cannot lock you out of read-only commands
   issue key is never shortened.
 
 `defaultBaseBranch`, `branchNaming.separator` and `branchNaming.maxLength` are
-consumed by `g new`. `confirmDestructive` is not consumed yet: it belongs to the
-commands that discard work, which do not exist.
+consumed by `g new`. `confirmDestructive` is not consumed yet: it governs
+operations that discard *local* work (`g undo`, `g clean`), not force push.
 
 ## Testing
 

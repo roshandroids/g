@@ -49,78 +49,22 @@ func TestRunPushRejectsUnexpectedArguments(t *testing.T) {
 	}
 }
 
-// Creating an upstream puts a new branch on the remote, which is visible to
-// everyone, so it is offered rather than assumed.
-func TestRunPushOffersToCreateAMissingUpstream(t *testing.T) {
-	service := &fakeService{pushErr: &workflow.NoUpstreamError{Branch: "HCM-1-work"}}
-	service.pushRes = workflow.PushResult{Branch: "HCM-1-work", Upstream: "origin/HCM-1-work", SetUpstream: true}
-
-	prompter := &fakePrompter{answers: []bool{true}}
+func TestRunPushReportsANewUpstream(t *testing.T) {
+	service := &fakeService{pushRes: workflow.PushResult{
+		Branch:      "HCM-1-work",
+		Upstream:    "origin/HCM-1-work",
+		SetUpstream: true,
+	}}
 	env, out, _ := newEnv(service)
-	env.Prompt = prompter
 
 	if code := Run(context.Background(), env, []string{"push"}); code != ExitOK {
 		t.Errorf("Run() = %d, want %d", code, ExitOK)
 	}
-
-	if len(prompter.questions) != 1 {
-		t.Fatalf("asked %d questions, want 1", len(prompter.questions))
-	}
-	if !strings.Contains(prompter.questions[0], "upstream") {
-		t.Errorf("question = %q, want it to mention the upstream", prompter.questions[0])
-	}
-
-	// The first attempt must not push, and the confirmed one must be the one
-	// that creates the upstream.
-	if service.pushCalls != 2 {
-		t.Fatalf("Push calls = %d, want 2", service.pushCalls)
-	}
-	if !service.pushReq.CreateUpstream {
-		t.Error("CreateUpstream = false on the confirmed retry, want the user's agreement to reach the workflow")
+	if service.pushCalls != 1 {
+		t.Errorf("Push calls = %d, want 1", service.pushCalls)
 	}
 	if !strings.Contains(out.String(), "set upstream to origin/HCM-1-work") {
 		t.Errorf("Run() output = %q, want it to report the new upstream", out.String())
-	}
-}
-
-func TestRunPushDeclinedUpstreamDoesNotPush(t *testing.T) {
-	service := &fakeService{pushErr: &workflow.NoUpstreamError{Branch: "HCM-1-work"}}
-
-	prompter := &fakePrompter{answers: []bool{false}}
-	env, out, errOut := newEnv(service)
-	env.Prompt = prompter
-
-	// Declining is a deliberate choice, but the push did not happen, so the
-	// exit code must not claim otherwise.
-	if code := Run(context.Background(), env, []string{"push"}); code != ExitError {
-		t.Errorf("Run() = %d, want %d", code, ExitError)
-	}
-	if !strings.Contains(errOut.String(), "nothing was pushed") {
-		t.Errorf("Run() error output = %q, want it to say nothing happened", errOut.String())
-	}
-	if out.Len() != 0 {
-		t.Errorf("Run() output = %q, want none", out.String())
-	}
-	if service.pushCalls != 1 {
-		t.Errorf("Push calls = %d, want only the attempt that reported the missing upstream", service.pushCalls)
-	}
-}
-
-// With no prompter there is nobody to ask, so the confirmation fails closed.
-func TestRunPushWithoutAPrompterDoesNotPush(t *testing.T) {
-	service := &fakeService{pushErr: &workflow.NoUpstreamError{Branch: "work"}}
-
-	env, _, errOut := newEnv(service)
-	env.Prompt = nil
-
-	if code := Run(context.Background(), env, []string{"push"}); code != ExitError {
-		t.Errorf("Run() = %d, want %d", code, ExitError)
-	}
-	if !strings.Contains(errOut.String(), "nothing was pushed") {
-		t.Errorf("Run() error output = %q, want it to refuse", errOut.String())
-	}
-	if service.pushCalls != 1 {
-		t.Errorf("Push calls = %d, want no push without consent", service.pushCalls)
 	}
 }
 

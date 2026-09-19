@@ -31,17 +31,7 @@ func TestPushPublishesABranchAndSetsTheUpstream(t *testing.T) {
 
 	fixture := newPushFixture(t)
 
-	// Without agreement to create an upstream, nothing is pushed and the
-	// branch is reported instead.
-	_, err := newService(t, workflow.Options{}).Push(context.Background(), fixture.dir, workflow.PushRequest{})
-	if !errors.Is(err, workflow.ErrNoUpstream) {
-		t.Fatalf("Push() error = %v, want ErrNoUpstream", err)
-	}
-	if branches := remoteBranches(t, fixture.upstream); len(branches) != 0 {
-		t.Fatalf("remote branches = %v, want nothing pushed before the user agreed", branches)
-	}
-
-	result, err := newService(t, workflow.Options{}).Push(context.Background(), fixture.dir, workflow.PushRequest{CreateUpstream: true})
+	result, err := newService(t, workflow.Options{}).Push(context.Background(), fixture.dir, workflow.PushRequest{})
 	if err != nil {
 		t.Fatalf("Push() error = %v, want nil", err)
 	}
@@ -96,7 +86,7 @@ func TestPushWithoutARemote(t *testing.T) {
 
 	dir := initRepository(t, "README.md")
 
-	_, err := newService(t, workflow.Options{}).Push(context.Background(), dir, workflow.PushRequest{CreateUpstream: true})
+	_, err := newService(t, workflow.Options{}).Push(context.Background(), dir, workflow.PushRequest{})
 	if !errors.Is(err, workflow.ErrNoRemote) {
 		t.Fatalf("Push() error = %v, want ErrNoRemote", err)
 	}
@@ -108,7 +98,7 @@ func TestPushRejectsADetachedHead(t *testing.T) {
 	fixture := newPushFixture(t)
 	runGit(t, fixture.dir, "checkout", "-q", "--detach", "HEAD")
 
-	_, err := newService(t, workflow.Options{}).Push(context.Background(), fixture.dir, workflow.PushRequest{CreateUpstream: true})
+	_, err := newService(t, workflow.Options{}).Push(context.Background(), fixture.dir, workflow.PushRequest{})
 	if !errors.Is(err, workflow.ErrDetachedHead) {
 		t.Fatalf("Push() error = %v, want ErrDetachedHead", err)
 	}
@@ -120,7 +110,7 @@ func TestPushRejectsARebaseInProgress(t *testing.T) {
 	fixture := newPushFixture(t)
 	startConflictingRebase(t, fixture.dir)
 
-	_, err := newService(t, workflow.Options{}).Push(context.Background(), fixture.dir, workflow.PushRequest{CreateUpstream: true})
+	_, err := newService(t, workflow.Options{}).Push(context.Background(), fixture.dir, workflow.PushRequest{})
 	if !errors.Is(err, workflow.ErrOperationInProgress) {
 		t.Fatalf("Push() error = %v, want ErrOperationInProgress", err)
 	}
@@ -200,7 +190,7 @@ func TestPushForceWithoutAnUpstream(t *testing.T) {
 
 	fixture := newPushFixture(t)
 
-	_, err := newService(t, workflow.Options{}).Push(context.Background(), fixture.dir, workflow.PushRequest{Force: true, CreateUpstream: true})
+	_, err := newService(t, workflow.Options{}).Push(context.Background(), fixture.dir, workflow.PushRequest{Force: true})
 	if !errors.Is(err, workflow.ErrNoUpstream) {
 		t.Fatalf("Push() error = %v, want ErrNoUpstream", err)
 	}
