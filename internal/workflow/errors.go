@@ -51,7 +51,7 @@ type NoUpstreamError struct {
 }
 
 func (e *NoUpstreamError) Error() string {
-	return fmt.Sprintf("branch %q has no upstream yet; run `g push` to publish it first", e.Branch)
+	return fmt.Sprintf("branch %q has no upstream; force-push needs an existing remote branch to compare against", e.Branch)
 }
 
 // Is reports the error as ErrNoUpstream.

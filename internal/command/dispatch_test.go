@@ -83,9 +83,7 @@ func (f *fakeService) Push(_ context.Context, dir string, req workflow.PushReque
 	f.dirs = append(f.dirs, dir)
 	f.pushCalls++
 	f.pushReq = req
-	// A branch with no upstream keeps reporting that until the caller agrees to
-	// create one, which is what the real workflow does.
-	if f.pushErr != nil && !req.CreateUpstream {
+	if f.pushErr != nil {
 		return workflow.PushResult{}, f.pushErr
 	}
 	return f.pushRes, nil
