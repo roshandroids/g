@@ -16,6 +16,44 @@ func TestDefaultIsSafe(t *testing.T) {
 	if !cfg.ConfirmDestructive {
 		t.Error("ConfirmDestructive = false, want true so destructive operations require confirmation")
 	}
+	if cfg.BranchNaming.Separator != "-" {
+		t.Errorf("BranchNaming.Separator = %q, want %q", cfg.BranchNaming.Separator, "-")
+	}
+	if cfg.BranchNaming.MaxLength != 0 {
+		t.Errorf("BranchNaming.MaxLength = %d, want 0 for no limit", cfg.BranchNaming.MaxLength)
+	}
+}
+
+func TestLoadOverridesBranchNaming(t *testing.T) {
+	path := writeConfig(t, `{"branchNaming":{"separator":"_","maxLength":50}}`)
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+	if cfg.BranchNaming.Separator != "_" {
+		t.Errorf("Separator = %q, want %q", cfg.BranchNaming.Separator, "_")
+	}
+	if cfg.BranchNaming.MaxLength != 50 {
+		t.Errorf("MaxLength = %d, want 50", cfg.BranchNaming.MaxLength)
+	}
+}
+
+// Naming is a nested object, so a partial one must not blank out the fields it
+// does not mention.
+func TestLoadKeepsNamingDefaultsForAbsentFields(t *testing.T) {
+	path := writeConfig(t, `{"branchNaming":{"maxLength":40}}`)
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+	if cfg.BranchNaming.Separator != "-" {
+		t.Errorf("Separator = %q, want the default %q", cfg.BranchNaming.Separator, "-")
+	}
+	if cfg.BranchNaming.MaxLength != 40 {
+		t.Errorf("MaxLength = %d, want 40", cfg.BranchNaming.MaxLength)
+	}
 }
 
 func TestLoadMissingFileReturnsDefaults(t *testing.T) {

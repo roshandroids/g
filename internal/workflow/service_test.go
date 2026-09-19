@@ -12,20 +12,7 @@ import (
 )
 
 // fakeRepository returns a fixed git state, so workflow behaviour is tested
-// without executing any process.
-type fakeRepository struct {
-	status git.Status
-	err    error
-	dirs   []string
-}
-
-func (f *fakeRepository) Status(_ context.Context, dir string) (git.Status, error) {
-	f.dirs = append(f.dirs, dir)
-	if f.err != nil {
-		return git.Status{}, f.err
-	}
-	return f.status, nil
-}
+// without executing any process. It is defined in fake_test.go.
 
 func TestServiceStatusSummarizesRepository(t *testing.T) {
 	const dir = "/work/nexus_applicant/lib"
@@ -46,7 +33,7 @@ func TestServiceStatusSummarizesRepository(t *testing.T) {
 		},
 	}}
 
-	status, err := NewService(repo).Status(context.Background(), dir)
+	status, err := NewService(repo, Options{}).Status(context.Background(), dir)
 	if err != nil {
 		t.Fatalf("Status() error = %v, want nil", err)
 	}
@@ -104,7 +91,7 @@ func TestServiceStatusSummarizesRepository(t *testing.T) {
 func TestServiceStatusCleanRepository(t *testing.T) {
 	repo := &fakeRepository{status: git.Status{Root: "/work/demo", Branch: "main"}}
 
-	status, err := NewService(repo).Status(context.Background(), "/work/demo")
+	status, err := NewService(repo, Options{}).Status(context.Background(), "/work/demo")
 	if err != nil {
 		t.Fatalf("Status() error = %v, want nil", err)
 	}
@@ -123,7 +110,7 @@ func TestServiceStatusCleanRepository(t *testing.T) {
 func TestServiceStatusDetachedHead(t *testing.T) {
 	repo := &fakeRepository{status: git.Status{Root: "/work/demo", Detached: true, Head: "a1b2c3d"}}
 
-	status, err := NewService(repo).Status(context.Background(), "/work/demo")
+	status, err := NewService(repo, Options{}).Status(context.Background(), "/work/demo")
 	if err != nil {
 		t.Fatalf("Status() error = %v, want nil", err)
 	}
@@ -140,9 +127,9 @@ func TestServiceStatusDetachedHead(t *testing.T) {
 }
 
 func TestServiceStatusReportsNotARepository(t *testing.T) {
-	repo := &fakeRepository{err: fmt.Errorf("%w: %s", git.ErrNotARepository, "/tmp")}
+	repo := &fakeRepository{statusErr: fmt.Errorf("%w: %s", git.ErrNotARepository, "/tmp")}
 
-	_, err := NewService(repo).Status(context.Background(), "/tmp")
+	_, err := NewService(repo, Options{}).Status(context.Background(), "/tmp")
 	if !errors.Is(err, ErrNotARepository) {
 		t.Fatalf("Status() error = %v, want ErrNotARepository", err)
 	}
@@ -152,9 +139,9 @@ func TestServiceStatusReportsNotARepository(t *testing.T) {
 }
 
 func TestServiceStatusPropagatesGitFailures(t *testing.T) {
-	repo := &fakeRepository{err: &git.CommandError{Args: []string{"status"}, ExitCode: 128, Stderr: "boom"}}
+	repo := &fakeRepository{statusErr: &git.CommandError{Args: []string{"status"}, ExitCode: 128, Stderr: "boom"}}
 
-	_, err := NewService(repo).Status(context.Background(), "/work/demo")
+	_, err := NewService(repo, Options{}).Status(context.Background(), "/work/demo")
 
 	var commandErr *git.CommandError
 	if !errors.As(err, &commandErr) {

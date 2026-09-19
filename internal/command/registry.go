@@ -9,18 +9,18 @@ import (
 
 // Commands returns the command surface in help order.
 //
-// Only status and help run today. The remaining commands are declared so the
-// intended surface is visible in `g --help` and so invoking one fails with a
-// clear message instead of pretending to work.
+// status, new, switch and help run today. The remaining commands are declared
+// so the intended surface is visible in `g --help` and so invoking one fails
+// with a clear message instead of pretending to work.
 func Commands() []Command {
 	return []Command{
 		statusCommand,
 		helpCommand(),
 		newCommand,
 		switchCommand,
-		syncCommand,
 		commitCommand,
 		pushCommand,
+		syncCommand,
 		undoCommand,
 		cleanCommand,
 	}
@@ -43,49 +43,51 @@ var statusCommand = Command{
 	Run:     runStatus,
 }
 
+var newCommand = Command{
+	Name:    "new",
+	Usage:   "g new <ticket> [description]",
+	Summary: "Create a branch for a new piece of work",
+	Run:     runNew,
+}
+
+var switchCommand = Command{
+	Name:    "switch",
+	Usage:   "g switch <branch>",
+	Summary: "Switch to an existing branch",
+	Run:     runSwitch,
+}
+
 // Planned commands: declarations only, no behaviour.
 var (
-	newCommand = Command{
-		Name:    "new",
-		Usage:   "g new <ticket> [description]",
-		Summary: "Create a branch for a new piece of work",
-		Roadmap: "v0.2",
-	}
-	switchCommand = Command{
-		Name:    "switch",
-		Usage:   "g switch <branch>",
-		Summary: "Switch to an existing branch",
-		Roadmap: "v0.2",
-	}
-	syncCommand = Command{
-		Name:    "sync",
-		Usage:   "g sync",
-		Summary: "Update the current branch from its upstream or base branch",
-		Roadmap: "v0.2",
-	}
 	commitCommand = Command{
 		Name:    "commit",
 		Usage:   "g commit <type> <message>",
-		Summary: "Stage changes and record a commit in one step",
-		Roadmap: "v0.2",
+		Summary: "Record a commit from the staged changes",
+		Roadmap: "v0.3",
 	}
 	pushCommand = Command{
 		Name:    "push",
 		Usage:   "g push",
 		Summary: "Push the current branch to its upstream",
-		Roadmap: "v0.2",
+		Roadmap: "v0.3",
+	}
+	syncCommand = Command{
+		Name:    "sync",
+		Usage:   "g sync",
+		Summary: "Update the current branch from its upstream or base branch",
+		Roadmap: "v0.4",
 	}
 	undoCommand = Command{
 		Name:    "undo",
 		Usage:   "g undo",
 		Summary: "Undo the latest commit while keeping its changes",
-		Roadmap: "v0.3",
+		Roadmap: "v0.5",
 	}
 	cleanCommand = Command{
 		Name:    "clean",
 		Usage:   "g clean",
 		Summary: "Delete local branches that are already merged",
-		Roadmap: "v0.3",
+		Roadmap: "v0.5",
 	}
 )
 

@@ -40,6 +40,22 @@ type FileChange struct {
 	Unmerged bool
 }
 
+// Operation is a Git operation that is paused part way through.
+//
+// A repository in one of these states is not simply "on a branch": during a
+// rebase HEAD is detached and the working tree belongs to a command the user
+// has to finish or abort.
+type Operation string
+
+// The operations g reports. The empty value means no operation is paused.
+const (
+	OperationNone       Operation = ""
+	OperationRebase     Operation = "rebase"
+	OperationMerge      Operation = "merge"
+	OperationCherryPick Operation = "cherry-pick"
+	OperationRevert     Operation = "revert"
+)
+
 // Status is the parsed state of a repository, as reported by git itself.
 type Status struct {
 	// Root is the absolute path of the work tree.
@@ -50,6 +66,9 @@ type Status struct {
 	Detached bool
 	// Head is the abbreviated commit HEAD points at when detached.
 	Head string
+	// Operation is the Git operation currently paused in the repository, if
+	// any.
+	Operation Operation
 	// Upstream is the tracking branch of the current branch; empty when the
 	// branch tracks nothing.
 	Upstream string
@@ -63,6 +82,9 @@ type Status struct {
 
 // HasUpstream reports whether the current branch tracks another branch.
 func (s Status) HasUpstream() bool { return s.Upstream != "" }
+
+// Clean reports whether the working tree and the index match HEAD.
+func (s Status) Clean() bool { return len(s.Files) == 0 }
 
 // unmergedPairs are the two-letter codes git uses for unresolved conflicts.
 //

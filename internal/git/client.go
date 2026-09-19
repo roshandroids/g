@@ -43,6 +43,9 @@ func (c *Client) Status(ctx context.Context, dir string) (Status, error) {
 	if status.Branch, status.Detached, status.Head, err = c.head(ctx, root); err != nil {
 		return Status{}, err
 	}
+	if status.Operation, err = c.operation(ctx, root); err != nil {
+		return Status{}, err
+	}
 	if status.Upstream, err = c.upstream(ctx, root); err != nil {
 		return Status{}, err
 	}

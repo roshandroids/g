@@ -59,12 +59,22 @@ func (r *scriptedRunner) Run(_ context.Context, spec process.Spec) (process.Resu
 // is two commits ahead of it. Tests override single responses to describe other
 // states.
 func cleanRepository() *scriptedRunner {
-	return newScriptedRunner().
+	return noOperation().
 		respond("rev-parse --show-toplevel", process.Result{Stdout: testRoot + "\n"}).
 		respond("symbolic-ref --short -q HEAD", process.Result{Stdout: "main\n"}).
 		respond("rev-parse --abbrev-ref --symbolic-full-name @{upstream}", process.Result{Stdout: "origin/main\n"}).
 		respond("rev-list --left-right --count @{upstream}...HEAD", process.Result{Stdout: "0\t2\n"}).
 		respond("status --porcelain -z", process.Result{})
+}
+
+// noOperation scripts the marker refs as absent, which is what a repository
+// with nothing paused in it reports.
+func noOperation() *scriptedRunner {
+	return newScriptedRunner().
+		respond("rev-parse -q --verify REBASE_HEAD", process.Result{ExitCode: 1}).
+		respond("rev-parse -q --verify MERGE_HEAD", process.Result{ExitCode: 1}).
+		respond("rev-parse -q --verify CHERRY_PICK_HEAD", process.Result{ExitCode: 1}).
+		respond("rev-parse -q --verify REVERT_HEAD", process.Result{ExitCode: 1})
 }
 
 func TestClientStatusCleanRepository(t *testing.T) {
@@ -159,7 +169,7 @@ func TestClientStatusKeepsTheLeadingSpaceOfUnstagedEntries(t *testing.T) {
 }
 
 func TestClientStatusDetachedHead(t *testing.T) {
-	runner := newScriptedRunner().
+	runner := noOperation().
 		respond("rev-parse --show-toplevel", process.Result{Stdout: testRoot + "\n"}).
 		respond("symbolic-ref --short -q HEAD", process.Result{ExitCode: 1}).
 		respond("rev-parse --short HEAD", process.Result{Stdout: "a1b2c3d\n"}).

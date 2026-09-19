@@ -178,7 +178,7 @@ func TestStatusOutsideRepository(t *testing.T) {
 
 	dir := t.TempDir()
 
-	_, err := workflow.NewService(git.NewClient(process.ExecRunner{})).Status(context.Background(), dir)
+	_, err := workflow.NewService(git.NewClient(process.ExecRunner{}), workflow.Options{}).Status(context.Background(), dir)
 	if !errors.Is(err, workflow.ErrNotARepository) {
 		t.Fatalf("Status() error = %v, want workflow.ErrNotARepository", err)
 	}
@@ -191,7 +191,7 @@ func TestStatusOutsideRepository(t *testing.T) {
 func statusOf(t *testing.T, dir string) workflow.Status {
 	t.Helper()
 
-	status, err := workflow.NewService(git.NewClient(process.ExecRunner{})).Status(context.Background(), dir)
+	status, err := workflow.NewService(git.NewClient(process.ExecRunner{}), workflow.Options{}).Status(context.Background(), dir)
 	if err != nil {
 		t.Fatalf("Status(%q) error = %v, want nil", dir, err)
 	}
