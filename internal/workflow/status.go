@@ -38,6 +38,13 @@ type Status struct {
 	Detached bool
 	// Head is the abbreviated commit HEAD points at when detached.
 	Head string
+	// Operation is the Git operation currently paused in the repository, if
+	// any.
+	//
+	// A rebase, cherry-pick or revert leaves HEAD detached, so this is what
+	// tells "you are looking at a commit" apart from "you are part way through
+	// something".
+	Operation git.Operation
 	// Upstream is nil when the current branch tracks no other branch.
 	Upstream *Upstream
 	// Staged holds index changes.
@@ -59,11 +66,12 @@ func (s Status) Clean() bool {
 // classifying each reported path for presentation.
 func summarize(raw git.Status) Status {
 	status := Status{
-		Name:     filepath.Base(filepath.Clean(raw.Root)),
-		Root:     raw.Root,
-		Branch:   raw.Branch,
-		Detached: raw.Detached,
-		Head:     raw.Head,
+		Name:      filepath.Base(filepath.Clean(raw.Root)),
+		Root:      raw.Root,
+		Branch:    raw.Branch,
+		Detached:  raw.Detached,
+		Head:      raw.Head,
+		Operation: raw.Operation,
 	}
 
 	if raw.HasUpstream() {
