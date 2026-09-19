@@ -119,6 +119,12 @@ func writeChanges(b *strings.Builder, title string, changes []workflow.Change) {
 	}
 
 	fmt.Fprintf(b, "\n%s:\n", title)
+	writeChangeList(b, changes)
+}
+
+// writeChangeList writes the entries of a change block without its title, for
+// callers that place the title themselves.
+func writeChangeList(b *strings.Builder, changes []workflow.Change) {
 	for _, change := range changes {
 		fmt.Fprintf(b, "  %-12s %s\n", change.Kind, changeLabel(change))
 	}

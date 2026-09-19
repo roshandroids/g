@@ -25,6 +25,8 @@ var (
 	// ErrOperationInProgress reports that Git is part way through another
 	// operation, such as a rebase.
 	ErrOperationInProgress = errors.New("another Git operation is in progress")
+	// ErrNothingStaged reports that there is nothing in the index to commit.
+	ErrNothingStaged = errors.New("nothing is staged")
 )
 
 // BranchExistsError reports that the branch to create is already present.

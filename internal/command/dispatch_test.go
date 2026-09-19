@@ -29,6 +29,11 @@ type fakeService struct {
 	switchRes   workflow.SwitchResult
 	switchErr   error
 	switchCalls int
+
+	commitReq   workflow.CommitRequest
+	commitRes   workflow.CommitResult
+	commitErr   error
+	commitCalls int
 }
 
 func (f *fakeService) Status(_ context.Context, dir string) (workflow.Status, error) {
@@ -59,13 +64,23 @@ func (f *fakeService) Switch(_ context.Context, dir string, req workflow.SwitchR
 	return f.switchRes, nil
 }
 
+func (f *fakeService) Commit(_ context.Context, dir string, req workflow.CommitRequest) (workflow.CommitResult, error) {
+	f.dirs = append(f.dirs, dir)
+	f.commitCalls++
+	f.commitReq = req
+	if f.commitErr != nil {
+		return workflow.CommitResult{}, f.commitErr
+	}
+	return f.commitRes, nil
+}
+
 func TestRunWithoutArgumentsShowsShortHelp(t *testing.T) {
 	env, out, errOut := newEnv(&fakeService{})
 
 	if code := Run(context.Background(), env, nil); code != ExitOK {
 		t.Errorf("Run() = %d, want %d", code, ExitOK)
 	}
-	if !strings.Contains(out.String(), "Commands: status, help, new, switch") {
+	if !strings.Contains(out.String(), "Commands: status, help, new, switch, commit") {
 		t.Errorf("Run() output = %q, want it to list the available commands", out.String())
 	}
 	if !strings.Contains(out.String(), "g --help") {
@@ -124,7 +139,7 @@ func TestRunRejectsUnknownFlag(t *testing.T) {
 }
 
 func TestRunReportsPlannedCommandsAsUnimplemented(t *testing.T) {
-	for _, name := range []string{"sync", "commit", "push", "undo", "clean"} {
+	for _, name := range []string{"sync", "push", "undo", "clean"} {
 		t.Run(name, func(t *testing.T) {
 			service := &fakeService{}
 			env, out, errOut := newEnv(service)
