@@ -72,11 +72,11 @@ Planned, declared in the command surface but intentionally not implemented yet:
 
 | Command                       | Milestone | Intent                                          |
 | ----------------------------- | --------- | ----------------------------------------------- |
-| `g sync`                      | v0.2      | Update the current branch from upstream/base     |
-| `g commit <type> <message>`   | v0.2      | Record a commit from the staged changes          |
-| `g push`                      | v0.2      | Push the current branch to its upstream          |
-| `g undo`                      | v0.3      | Undo the latest commit while keeping its changes |
-| `g clean`                     | v0.3      | Delete local branches that are already merged    |
+| `g commit <type> <message>`   | v0.3      | Record a commit from the staged changes          |
+| `g push`                      | v0.3      | Push the current branch to its upstream          |
+| `g sync`                      | v0.4      | Update the current branch from upstream/base     |
+| `g undo`                      | v0.5      | Undo the latest commit while keeping its changes |
+| `g clean`                     | v0.5      | Delete local branches that are already merged    |
 
 Invoking a planned command exits with an error explaining that it is not
 implemented; it never pretends to succeed.
@@ -272,20 +272,20 @@ short mode and when `git` is missing.
 
 ## Roadmap
 
-**V0.1** — project foundation, Git process abstraction, repository state,
-`g status`
+**V0.1 Foundation** — project foundation, Git process abstraction, repository
+state, `g status`
 
-**V0.2** (in progress) — `g new`, `g switch`, `g commit`, `g push`, `g sync`
+**V0.2 Branch workflow** — `g new`, `g switch`
 
-- `g new` and `g switch` are implemented.
-- `g commit` and `g push` are next.
-- `g sync` is designed before it is implemented: the states it has to cope with
-  are written down first, because turning a stash/checkout/rebase/stash-pop
-  sequence into a command is exactly where a workflow tool can lose work.
+**V0.3 Commit & Push** — `g commit`, `g push`
 
-**V0.3** — `g undo`, `g clean`, GitHub CLI integration, PR workflows
+**V0.4 Safe Synchronization** — `g sync`
 
-**V0.4+** — improved interactive workflows, desktop GUI, Wails integration
+**V0.5 Recovery** — `g undo`, `g clean`
+
+**V0.6 GitHub workflows** — GitHub CLI integration, PR workflows
+
+**V1.0 Distribution** — packaging, installation, desktop GUI / Wails
 
 ## License
 
