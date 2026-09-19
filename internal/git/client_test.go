@@ -69,9 +69,14 @@ func cleanRepository() *scriptedRunner {
 
 // noOperation scripts the marker refs as absent, which is what a repository
 // with nothing paused in it reports.
+//
+// Rebase state directories are named through --git-path; they resolve to paths
+// under the work tree that do not exist for these scripted fixtures, so
+// os.Stat reports idle without further setup.
 func noOperation() *scriptedRunner {
 	return newScriptedRunner().
-		respond("rev-parse -q --verify REBASE_HEAD", process.Result{ExitCode: 1}).
+		respond("rev-parse --git-path rebase-merge", process.Result{Stdout: ".git/rebase-merge\n"}).
+		respond("rev-parse --git-path rebase-apply", process.Result{Stdout: ".git/rebase-apply\n"}).
 		respond("rev-parse -q --verify MERGE_HEAD", process.Result{ExitCode: 1}).
 		respond("rev-parse -q --verify CHERRY_PICK_HEAD", process.Result{ExitCode: 1}).
 		respond("rev-parse -q --verify REVERT_HEAD", process.Result{ExitCode: 1})

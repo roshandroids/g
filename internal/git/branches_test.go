@@ -3,6 +3,8 @@ package git
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -163,21 +165,31 @@ func TestClientSwitchBranchReportsDirtyTreeRefusal(t *testing.T) {
 }
 
 func TestClientOperation(t *testing.T) {
-	tests := []struct {
+	t.Run("rebase", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := os.MkdirAll(filepath.Join(dir, ".git", "rebase-merge"), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		runner := noOperation()
+		got, err := NewClient(runner).operation(context.Background(), dir)
+		if err != nil {
+			t.Fatalf("Operation() error = %v, want nil", err)
+		}
+		if got != OperationRebase {
+			t.Errorf("Operation() = %q, want %q", got, OperationRebase)
+		}
+	})
+
+	for _, test := range []struct {
 		name   string
 		marker string
 		want   Operation
 	}{
-		{name: "rebase", marker: "REBASE_HEAD", want: OperationRebase},
 		{name: "merge", marker: "MERGE_HEAD", want: OperationMerge},
 		{name: "cherry-pick", marker: "CHERRY_PICK_HEAD", want: OperationCherryPick},
 		{name: "revert", marker: "REVERT_HEAD", want: OperationRevert},
-	}
-
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
-			// Every earlier marker in the precedence order has to be scripted
-			// as absent, or the runner reports the invocation as unexpected.
 			runner := noOperation().respond(
 				"rev-parse -q --verify "+test.marker,
 				process.Result{Stdout: "0123456789abcdef\n"},
@@ -206,29 +218,42 @@ func TestClientOperationReportsNone(t *testing.T) {
 	}
 }
 
-// During a rebase git keeps other marker refs around, so the check has to stop
-// at the first match in precedence order rather than reporting whichever it
-// happens to find.
-func TestClientOperationPrefersRebaseOverOtherMarkers(t *testing.T) {
-	runner := newScriptedRunner().
-		respond("rev-parse -q --verify REBASE_HEAD", process.Result{Stdout: "aaa\n"}).
-		respond("rev-parse -q --verify MERGE_HEAD", process.Result{Stdout: "bbb\n"})
+// During a rebase of a merge commit git leaves both a rebase state and MERGE_HEAD.
+// That known overlap resolves as a rebase; other overlaps are ambiguous.
+func TestClientOperationPrefersRebaseOverMergeMarker(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, ".git", "rebase-merge"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	runner := noOperation().respond(
+		"rev-parse -q --verify MERGE_HEAD",
+		process.Result{Stdout: "bbb\n"},
+	)
 
-	got, err := NewClient(runner).operation(context.Background(), testRoot)
+	got, err := NewClient(runner).operation(context.Background(), dir)
 	if err != nil {
 		t.Fatalf("Operation() error = %v, want nil", err)
 	}
 	if got != OperationRebase {
 		t.Errorf("Operation() = %q, want %q", got, OperationRebase)
 	}
-	if len(runner.calls) != 1 {
-		t.Errorf("Operation() made %d invocations, want it to stop at the first match", len(runner.calls))
+}
+
+func TestClientOperationReportsAmbiguousMarkers(t *testing.T) {
+	runner := noOperation().
+		respond("rev-parse -q --verify MERGE_HEAD", process.Result{Stdout: "aaa\n"}).
+		respond("rev-parse -q --verify CHERRY_PICK_HEAD", process.Result{Stdout: "bbb\n"})
+
+	_, err := NewClient(runner).operation(context.Background(), testRoot)
+	var ambiguous *AmbiguousOperationError
+	if !errors.As(err, &ambiguous) {
+		t.Fatalf("Operation() error = %v, want AmbiguousOperationError", err)
 	}
 }
 
 func TestClientOperationReportsExecutionFailure(t *testing.T) {
 	runner := newScriptedRunner().fail(
-		"rev-parse -q --verify REBASE_HEAD",
+		"rev-parse --git-path rebase-merge",
 		errors.New("git: executable not found"),
 	)
 
@@ -242,12 +267,14 @@ func TestClientOperationReportsExecutionFailure(t *testing.T) {
 }
 
 func TestClientStatusReportsOperationInProgress(t *testing.T) {
-	runner := cleanRepository().respond(
-		"rev-parse -q --verify REBASE_HEAD",
-		process.Result{Stdout: "0123456789abcdef\n"},
-	)
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, ".git", "rebase-merge"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	runner := cleanRepository().
+		respond("rev-parse --show-toplevel", process.Result{Stdout: dir + "\n"})
 
-	status, err := NewClient(runner).Status(context.Background(), testRoot)
+	status, err := NewClient(runner).Status(context.Background(), dir)
 	if err != nil {
 		t.Fatalf("Status() error = %v, want nil", err)
 	}
