@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/roshandroids/g/internal/config"
+	"github.com/roshandroids/g/internal/git"
 	"github.com/roshandroids/g/internal/workflow"
 )
 
@@ -43,6 +44,27 @@ type fakeService struct {
 	syncRes   workflow.SyncResult
 	syncErr   error
 	syncCalls int
+
+	continueRes   workflow.ContinueResult
+	continueErr   error
+	continueCalls int
+
+	currentOp    git.Operation
+	currentOpErr error
+
+	abortRes   workflow.AbortResult
+	abortErr   error
+	abortCalls int
+
+	undoCount int
+	undoRes   workflow.UndoResult
+	undoErr   error
+	undoCalls int
+
+	cleanReq   workflow.CleanRequest
+	cleanRes   workflow.CleanResult
+	cleanErr   error
+	cleanCalls int
 }
 
 func (f *fakeService) Status(_ context.Context, dir string) (workflow.Status, error) {
@@ -102,13 +124,59 @@ func (f *fakeService) Sync(_ context.Context, dir string) (workflow.SyncResult, 
 	return f.syncRes, nil
 }
 
+func (f *fakeService) Continue(_ context.Context, dir string) (workflow.ContinueResult, error) {
+	f.dirs = append(f.dirs, dir)
+	f.continueCalls++
+	if f.continueErr != nil {
+		return workflow.ContinueResult{}, f.continueErr
+	}
+	return f.continueRes, nil
+}
+
+func (f *fakeService) CurrentOperation(_ context.Context, dir string) (git.Operation, error) {
+	f.dirs = append(f.dirs, dir)
+	if f.currentOpErr != nil {
+		return git.OperationNone, f.currentOpErr
+	}
+	return f.currentOp, nil
+}
+
+func (f *fakeService) Abort(_ context.Context, dir string) (workflow.AbortResult, error) {
+	f.dirs = append(f.dirs, dir)
+	f.abortCalls++
+	if f.abortErr != nil {
+		return workflow.AbortResult{}, f.abortErr
+	}
+	return f.abortRes, nil
+}
+
+func (f *fakeService) Undo(_ context.Context, dir string, count int) (workflow.UndoResult, error) {
+	f.dirs = append(f.dirs, dir)
+	f.undoCalls++
+	f.undoCount = count
+	if f.undoErr != nil {
+		return workflow.UndoResult{}, f.undoErr
+	}
+	return f.undoRes, nil
+}
+
+func (f *fakeService) Clean(_ context.Context, dir string, req workflow.CleanRequest) (workflow.CleanResult, error) {
+	f.dirs = append(f.dirs, dir)
+	f.cleanCalls++
+	f.cleanReq = req
+	if f.cleanErr != nil {
+		return workflow.CleanResult{}, f.cleanErr
+	}
+	return f.cleanRes, nil
+}
+
 func TestRunWithoutArgumentsShowsShortHelp(t *testing.T) {
 	env, out, errOut := newEnv(&fakeService{})
 
 	if code := Run(context.Background(), env, nil); code != ExitOK {
 		t.Errorf("Run() = %d, want %d", code, ExitOK)
 	}
-	if !strings.Contains(out.String(), "Commands: status, help, new, switch, commit, push, sync") {
+	if !strings.Contains(out.String(), "Commands: status, help, new, switch, commit, push, sync, continue, abort, undo, clean") {
 		t.Errorf("Run() output = %q, want it to list the available commands", out.String())
 	}
 	if !strings.Contains(out.String(), "g --help") {
@@ -132,10 +200,13 @@ func TestRunShowsHelp(t *testing.T) {
 			}
 
 			got := out.String()
-			for _, want := range []string{"Commands:", "g status", "g sync", "Planned (not implemented yet):", "g undo", "Exit codes:"} {
+			for _, want := range []string{"Commands:", "g status", "g sync", "g continue", "g undo", "g clean", "Exit codes:"} {
 				if !strings.Contains(got, want) {
 					t.Errorf("Run(%q) output missing %q:\n%s", arg, want, got)
 				}
+			}
+			if strings.Contains(got, "Planned (not implemented yet):") {
+				t.Errorf("Run(%q) output still lists planned commands:\n%s", arg, got)
 			}
 		})
 	}
@@ -166,25 +237,123 @@ func TestRunRejectsUnknownFlag(t *testing.T) {
 	}
 }
 
-func TestRunReportsPlannedCommandsAsUnimplemented(t *testing.T) {
-	for _, name := range []string{"undo", "clean"} {
-		t.Run(name, func(t *testing.T) {
-			service := &fakeService{}
-			env, out, errOut := newEnv(service)
+func TestRunUndo(t *testing.T) {
+	service := &fakeService{undoRes: workflow.UndoResult{
+		Branch:  "feature",
+		Count:   1,
+		Commits: []git.CommitSummary{{Hash: "abc1234", Subject: "fix: thing"}},
+	}}
+	env, out, errOut := newEnv(service)
 
-			if code := Run(context.Background(), env, []string{name}); code != ExitError {
-				t.Errorf("Run(%q) = %d, want %d", name, code, ExitError)
-			}
-			if !strings.Contains(errOut.String(), "not implemented yet") {
-				t.Errorf("Run(%q) error output = %q, want it to say the command is unimplemented", name, errOut.String())
-			}
-			if out.Len() != 0 {
-				t.Errorf("Run(%q) output = %q, want none", name, out.String())
-			}
-			if len(service.dirs) != 0 {
-				t.Errorf("Run(%q) called the workflow layer, want it to do nothing", name)
-			}
-		})
+	if code := Run(context.Background(), env, []string{"undo"}); code != ExitOK {
+		t.Errorf("Run() = %d, want %d", code, ExitOK)
+	}
+	if errOut.Len() != 0 {
+		t.Errorf("Run() error output = %q, want none", errOut.String())
+	}
+	if service.undoCalls != 1 || service.undoCount != 1 {
+		t.Errorf("Undo calls/count = %d/%d, want 1/1", service.undoCalls, service.undoCount)
+	}
+	if !strings.Contains(out.String(), "Changes preserved and staged") {
+		t.Errorf("Run() output = %q, want undo summary", out.String())
+	}
+}
+
+func TestRunUndoWithCount(t *testing.T) {
+	service := &fakeService{undoRes: workflow.UndoResult{Count: 2, Commits: []git.CommitSummary{
+		{Hash: "a", Subject: "one"},
+		{Hash: "b", Subject: "two"},
+	}}}
+	env, _, _ := newEnv(service)
+
+	if code := Run(context.Background(), env, []string{"undo", "2"}); code != ExitOK {
+		t.Errorf("Run() = %d, want %d", code, ExitOK)
+	}
+	if service.undoCount != 2 {
+		t.Errorf("undoCount = %d, want 2", service.undoCount)
+	}
+}
+
+func TestRunUndoRejectsInvalidCount(t *testing.T) {
+	env, _, errOut := newEnv(&fakeService{})
+
+	if code := Run(context.Background(), env, []string{"undo", "0"}); code != ExitUsage {
+		t.Errorf("Run() = %d, want %d", code, ExitUsage)
+	}
+	if !strings.Contains(errOut.String(), "positive integer") {
+		t.Errorf("error = %q, want positive integer message", errOut.String())
+	}
+}
+
+func TestRunAbortRequiresConfirmation(t *testing.T) {
+	service := &fakeService{
+		currentOp: git.OperationRebase,
+		abortRes:  workflow.AbortResult{Operation: git.OperationRebase},
+	}
+	prompter := &fakePrompter{answers: []bool{true}}
+	env, out, _ := newEnv(service)
+	env.Prompt = prompter
+
+	if code := Run(context.Background(), env, []string{"abort"}); code != ExitOK {
+		t.Errorf("Run() = %d, want %d", code, ExitOK)
+	}
+	if service.abortCalls != 1 {
+		t.Errorf("abortCalls = %d, want 1", service.abortCalls)
+	}
+	if !strings.Contains(out.String(), "Rebase aborted") {
+		t.Errorf("output = %q, want aborted message", out.String())
+	}
+}
+
+func TestRunAbortDeclined(t *testing.T) {
+	service := &fakeService{currentOp: git.OperationMerge}
+	prompter := &fakePrompter{answers: []bool{false}}
+	env, _, errOut := newEnv(service)
+	env.Prompt = prompter
+
+	if code := Run(context.Background(), env, []string{"abort"}); code != ExitError {
+		t.Errorf("Run() = %d, want %d", code, ExitError)
+	}
+	if service.abortCalls != 0 {
+		t.Errorf("abortCalls = %d, want 0", service.abortCalls)
+	}
+	if !strings.Contains(errOut.String(), "nothing was aborted") {
+		t.Errorf("error = %q, want declined message", errOut.String())
+	}
+}
+
+func TestRunCleanPreview(t *testing.T) {
+	service := &fakeService{cleanRes: workflow.CleanResult{
+		Candidates: []git.StaleBranch{{Name: "old", Reason: git.StaleMerged, Safe: true}},
+	}}
+	env, out, _ := newEnv(service)
+
+	if code := Run(context.Background(), env, []string{"clean"}); code != ExitOK {
+		t.Errorf("Run() = %d, want %d", code, ExitOK)
+	}
+	if service.cleanCalls != 1 || service.cleanReq.Apply {
+		t.Errorf("cleanCalls/Apply = %d/%v, want preview", service.cleanCalls, service.cleanReq.Apply)
+	}
+	if !strings.Contains(out.String(), "Preview only") {
+		t.Errorf("output = %q, want preview", out.String())
+	}
+}
+
+func TestRunContinue(t *testing.T) {
+	service := &fakeService{
+		status:      workflow.Status{Branch: "main", Operation: git.OperationRebase},
+		continueRes: workflow.ContinueResult{Operation: git.OperationRebase, Branch: "main"},
+	}
+	env, out, _ := newEnv(service)
+
+	if code := Run(context.Background(), env, []string{"continue"}); code != ExitOK {
+		t.Errorf("Run() = %d, want %d", code, ExitOK)
+	}
+	if service.continueCalls != 1 {
+		t.Errorf("continueCalls = %d, want 1", service.continueCalls)
+	}
+	if !strings.Contains(out.String(), "Rebase continued successfully") {
+		t.Errorf("output = %q, want success", out.String())
 	}
 }
 

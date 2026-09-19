@@ -82,17 +82,14 @@ Implemented:
 | `g commit <type> <message>`   | Commit what is staged                                |
 | `g push [--force]`            | Push the current branch to its upstream              |
 | `g sync`                      | Update the current branch from its base branch       |
+| `g continue`                  | Continue a paused rebase, merge, or cherry-pick      |
+| `g abort`                     | Abort a paused rebase, merge, or cherry-pick         |
+| `g undo [count]`              | Undo recent commits while keeping changes staged     |
+| `g clean [--apply]`           | Preview or delete stale local branches               |
 | `g help`                      | Show the full command reference (`g --help` works too) |
 
-Planned, declared in the command surface but intentionally not implemented yet:
-
-| Command                       | Milestone | Intent                                          |
-| ----------------------------- | --------- | ----------------------------------------------- |
-| `g undo`                      | v0.5      | Undo the latest commit while keeping its changes |
-| `g clean`                     | v0.5      | Delete local branches that are already merged    |
-
-Invoking a planned command exits with an error explaining that it is not
-implemented; it never pretends to succeed.
+There are no planned-but-unimplemented commands in the current surface. GitHub
+PR workflows remain a later milestone and are not listed here as available.
 
 ### `g status`
 
@@ -112,8 +109,8 @@ Shows the state the other workflows actually act on, and nothing else:
 This is deliberately not a replacement for `git status`. The full output already
 exists and is better at being exhaustive — it lists hints, ignored files and
 directory rollups that a summary has no business reproducing. `g status` answers
-the narrower question of what `g new`, `g switch`, `g commit`, `g push` and
-`g sync` are about to do.
+the narrower question of what `g new`, `g switch`, `g commit`, `g push`,
+`g sync`, `g continue`, `g abort`, `g undo` and `g clean` are about to do.
 
 The operation line exists because of a trap worth naming. While a rebase is
 paused, `git branch --show-current` is **empty** — the branch is detached for the
@@ -287,9 +284,9 @@ restoration conflicts, the stash entry is kept and the error explains how to
 recover. `git stash clear` is never used.
 
 **Conflicts stop the workflow.** A conflicted rebase is left exactly as Git left
-it. `g` prints the `git add` / `git rebase --continue` and `git rebase --abort`
-commands; it does not resolve, continue or abort for you. (`g continue` and
-`g abort` are later milestones.)
+it. Resolve conflicts, then run `g continue` (or `git rebase --continue`), or
+discard the attempt with `g abort` after confirmation. Conflicts are never
+resolved automatically.
 
 **`g sync` does not push.** After a rebase the feature branch may need
 `g push --force` (which still means `--force-with-lease` and still asks first).
@@ -298,6 +295,76 @@ commands; it does not resolve, continue or abort for you. (`g continue` and
 It also refuses divergent base histories (local and remote base both have unique
 commits) rather than rewriting the base, and it fails loudly when fetch cannot
 reach the remote so you know the base was not refreshed.
+
+### `g continue`
+
+```console
+$ g continue
+Rebase in progress.
+Branch: main
+Conflicted:
+  README.md
+
+Rebase continued successfully.
+```
+
+Detects the paused operation (rebase, merge, cherry-pick, or revert) from the
+same markers `g status` and `g sync` use, prints a short state summary, then
+runs the matching `git <op> --continue`. Nothing happens when no operation is
+paused. Ambiguous marker combinations are refused rather than guessed.
+Conflicts are never auto-resolved: a failed continue leaves Git's state intact.
+
+### `g abort`
+
+```console
+$ g abort
+A rebase is currently in progress.
+Aborting will discard the current rebase state.
+
+Continue? [y/N]
+```
+
+Requires explicit confirmation (default **No**). On acceptance it runs the
+matching `git <op> --abort`. It never aborts without asking.
+
+### `g undo`
+
+```console
+$ g undo
+Undoing last commit:
+  abc1234 fix: resolve applicant history issue
+
+Commit removed.
+Changes preserved and staged.
+```
+
+`g undo [count]` performs a soft reset (`git reset --soft HEAD~N`). Changes from
+the undone commits remain staged. Hard reset is not offered. Detached HEAD and
+insufficient history are refused. When the branch has an upstream, output notes
+that only local history changed and that a later force-with-lease push may be
+needed — nothing is pushed automatically.
+
+### `g clean`
+
+```console
+$ g clean
+Stale local branches:
+
+  HCM-123-old-feature (merged)
+  HCM-456-completed (gone)
+
+Preview only. No branches deleted.
+Run `g clean --apply` to delete them after confirmation.
+```
+
+Preview is the default. Candidates are local branches whose upstream was deleted
+(`gone`) or that are already merged into the base branch. `main`, `master`, the
+configured default base, and the current branch are never candidates. Remote
+branches are never deleted.
+
+`g clean --apply` lists the branches again, asks for confirmation (default No),
+and deletes with `git branch -d` only. Force deletion (`-D`) is not exposed in
+this release.
 
 ### Exit codes
 
@@ -312,7 +379,7 @@ reach the remote so you know the base was not refreshed.
 ```
 cmd/g            entry point: wires the layers together
 internal/command command definitions, dispatch, and help
-internal/workflow UI-independent operations: status, branch, commit, push and sync
+internal/workflow UI-independent operations: status, branch, commit, push, sync, recovery
 internal/branch  branch naming policy: slugging and ref validation
 internal/commit  commit message policy: types and subject validation
 internal/prompt  the only place that asks the user a question
@@ -397,6 +464,12 @@ what they will do on your behalf:
 - `g sync` never pushes, never force-pushes, never aborts an in-progress Git
   operation, and never discards local changes. Conflicted rebases and conflicted
   stash restorations are left recoverable, with the stash kept when restore fails.
+- `g continue` never resolves conflicts; a failed continue leaves Git paused.
+- `g abort` always asks first (default No) and never aborts without confirmation.
+- `g undo` only soft-resets; changes stay staged. It never hard-resets and never
+  pushes rewritten history.
+- `g clean` previews by default, never deletes `main`/`master`/current/base, and
+  only deletes after `--apply` plus confirmation.
 
 Confirmation lives at the edge of the program. Workflows expose a flag such as
 "force this push" and treat it as the caller's assertion that the user agreed;
@@ -404,11 +477,10 @@ Confirmation lives at the edge of the program. Workflows expose a flag such as
 as a refusal, so a command that needs an answer fails closed rather than assuming
 consent.
 
-`confirmDestructive` is still not consulted by any command. It is documented as
-governing operations that discard *local* work — commits and uncommitted changes
-— and none of the commands so far do that. Force push overwrites remote history
-rather than local work, which is why it always asks instead of deferring to the
-setting. `g undo` and `g clean` are where it will apply.
+`confirmDestructive` is still not consulted by any command. Abort and clean
+always ask explicitly (default No). Force push always asks because it overwrites
+remote history rather than local work. Soft `g undo` preserves changes, so it
+does not ask.
 
 ## Configuration
 
@@ -449,9 +521,9 @@ continues with the defaults, so a typo cannot lock you out of read-only commands
   issue key is never shortened.
 
 `defaultBaseBranch`, `branchNaming.separator` and `branchNaming.maxLength` are
-consumed by `g new` and `g sync`. `confirmDestructive` is not consumed yet: it
-governs operations that discard *local* work (`g undo`, `g clean`), not force
-push.
+consumed by `g new`, `g sync` and `g clean`. `confirmDestructive` is reserved
+for a future path that discards local work without a dedicated always-on prompt;
+abort and clean already confirm every time.
 
 ## Testing
 
@@ -472,7 +544,8 @@ staged versus unstaged changes, untracked files, conflicts, detached HEAD,
 upstream tracking, ahead/behind counts, branch creation and switching, commit
 recording, pushing and force-with-lease refusals, safe synchronisation (dirty
 trees, rebase conflicts, stash restore conflicts, divergent bases, paused
-operations), the paused-operation states, and the not-a-repository case. They
+operations), recovery (`g continue`, `g abort`, `g undo`, `g clean` preview and
+apply), the paused-operation states, and the not-a-repository case. They
 skip themselves in short mode and when `git` is missing.
 
 ## Roadmap
@@ -486,7 +559,7 @@ state, `g status`
 
 **V0.4 Safe Synchronization** — `g sync` ✅
 
-**V0.5 Recovery** — `g undo`, `g clean`
+**V0.5 Recovery** — `g continue`, `g abort`, `g undo`, `g clean` ✅
 
 **V0.6 GitHub workflows** — GitHub CLI integration, PR workflows
 

@@ -146,7 +146,7 @@ func TestRenderStatusReportsAPausedOperation(t *testing.T) {
 		"Root:       /work/demo\n" +
 		"Branch:     detached at a1b2c3d\n" +
 		"Upstream:   none\n" +
-		"Operation:  rebase in progress\n" +
+		"Operation:  Rebase in progress\n" +
 		"\n" +
 		"Working tree: clean\n"
 
@@ -165,7 +165,7 @@ func TestRenderStatusReportsEveryPausedOperation(t *testing.T) {
 		t.Run(string(operation), func(t *testing.T) {
 			got := renderStatus(t, workflow.Status{Name: "demo", Operation: operation})
 
-			if !strings.Contains(got, "Operation:  "+string(operation)+" in progress") {
+			if !strings.Contains(got, "Operation:  "+OperationLabel(operation)+" in progress") {
 				t.Errorf("RenderStatus() = %q, want it to report the %s", got, operation)
 			}
 		})

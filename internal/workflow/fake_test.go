@@ -67,6 +67,38 @@ type fakeRepository struct {
 
 	restoreErr   error
 	restoreCalls int
+
+	pausedOps    []git.Operation
+	pausedOpsErr error
+
+	continueCalls []git.Operation
+	continueErr   error
+
+	abortCalls []git.Operation
+	abortErr   error
+
+	softResetCalls []int
+	softResetErr   error
+
+	recentCommits    []git.CommitSummary
+	recentCommitsErr error
+
+	commitCount    int
+	commitCountErr error
+
+	goneBranches    []string
+	goneBranchesErr error
+
+	mergedBranches    []string
+	mergedBranchesErr error
+
+	deleteCalls []deleteCall
+	deleteErr   error
+}
+
+type deleteCall struct {
+	name  string
+	force bool
 }
 
 type remoteBranchCall struct {
@@ -207,4 +239,68 @@ func (f *fakeRepository) PreserveChanges(_ context.Context, _, _ string) (git.Pr
 func (f *fakeRepository) RestoreChanges(_ context.Context, _ string) error {
 	f.restoreCalls++
 	return f.restoreErr
+}
+
+func (f *fakeRepository) PausedOperations(_ context.Context, _ string) ([]git.Operation, error) {
+	if f.pausedOpsErr != nil {
+		return nil, f.pausedOpsErr
+	}
+	if f.pausedOps != nil {
+		return f.pausedOps, nil
+	}
+	if f.status.Operation != git.OperationNone {
+		return []git.Operation{f.status.Operation}, nil
+	}
+	return nil, nil
+}
+
+func (f *fakeRepository) Continue(_ context.Context, _ string, op git.Operation) error {
+	f.continueCalls = append(f.continueCalls, op)
+	return f.continueErr
+}
+
+func (f *fakeRepository) Abort(_ context.Context, _ string, op git.Operation) error {
+	f.abortCalls = append(f.abortCalls, op)
+	return f.abortErr
+}
+
+func (f *fakeRepository) SoftReset(_ context.Context, _ string, count int) error {
+	f.softResetCalls = append(f.softResetCalls, count)
+	return f.softResetErr
+}
+
+func (f *fakeRepository) RecentCommits(_ context.Context, _ string, _ int) ([]git.CommitSummary, error) {
+	if f.recentCommitsErr != nil {
+		return nil, f.recentCommitsErr
+	}
+	return f.recentCommits, nil
+}
+
+func (f *fakeRepository) CommitCount(_ context.Context, _ string) (int, error) {
+	if f.commitCountErr != nil {
+		return 0, f.commitCountErr
+	}
+	if f.commitCount == 0 {
+		return len(f.recentCommits) + 1, nil
+	}
+	return f.commitCount, nil
+}
+
+func (f *fakeRepository) GoneBranches(_ context.Context, _ string) ([]string, error) {
+	if f.goneBranchesErr != nil {
+		return nil, f.goneBranchesErr
+	}
+	return f.goneBranches, nil
+}
+
+func (f *fakeRepository) MergedBranches(_ context.Context, _, _ string) ([]string, error) {
+	if f.mergedBranchesErr != nil {
+		return nil, f.mergedBranchesErr
+	}
+	return f.mergedBranches, nil
+}
+
+func (f *fakeRepository) DeleteBranch(_ context.Context, _, name string, force bool) error {
+	f.deleteCalls = append(f.deleteCalls, deleteCall{name: name, force: force})
+	return f.deleteErr
 }
