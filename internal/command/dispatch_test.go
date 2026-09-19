@@ -39,6 +39,10 @@ type fakeService struct {
 	pushRes   workflow.PushResult
 	pushErr   error
 	pushCalls int
+
+	syncRes   workflow.SyncResult
+	syncErr   error
+	syncCalls int
 }
 
 func (f *fakeService) Status(_ context.Context, dir string) (workflow.Status, error) {
@@ -89,13 +93,22 @@ func (f *fakeService) Push(_ context.Context, dir string, req workflow.PushReque
 	return f.pushRes, nil
 }
 
+func (f *fakeService) Sync(_ context.Context, dir string) (workflow.SyncResult, error) {
+	f.dirs = append(f.dirs, dir)
+	f.syncCalls++
+	if f.syncErr != nil {
+		return workflow.SyncResult{}, f.syncErr
+	}
+	return f.syncRes, nil
+}
+
 func TestRunWithoutArgumentsShowsShortHelp(t *testing.T) {
 	env, out, errOut := newEnv(&fakeService{})
 
 	if code := Run(context.Background(), env, nil); code != ExitOK {
 		t.Errorf("Run() = %d, want %d", code, ExitOK)
 	}
-	if !strings.Contains(out.String(), "Commands: status, help, new, switch, commit, push") {
+	if !strings.Contains(out.String(), "Commands: status, help, new, switch, commit, push, sync") {
 		t.Errorf("Run() output = %q, want it to list the available commands", out.String())
 	}
 	if !strings.Contains(out.String(), "g --help") {
@@ -119,7 +132,7 @@ func TestRunShowsHelp(t *testing.T) {
 			}
 
 			got := out.String()
-			for _, want := range []string{"Commands:", "g status", "Planned (not implemented yet):", "g sync", "Exit codes:"} {
+			for _, want := range []string{"Commands:", "g status", "g sync", "Planned (not implemented yet):", "g undo", "Exit codes:"} {
 				if !strings.Contains(got, want) {
 					t.Errorf("Run(%q) output missing %q:\n%s", arg, want, got)
 				}
@@ -154,7 +167,7 @@ func TestRunRejectsUnknownFlag(t *testing.T) {
 }
 
 func TestRunReportsPlannedCommandsAsUnimplemented(t *testing.T) {
-	for _, name := range []string{"sync", "undo", "clean"} {
+	for _, name := range []string{"undo", "clean"} {
 		t.Run(name, func(t *testing.T) {
 			service := &fakeService{}
 			env, out, errOut := newEnv(service)
@@ -172,6 +185,35 @@ func TestRunReportsPlannedCommandsAsUnimplemented(t *testing.T) {
 				t.Errorf("Run(%q) called the workflow layer, want it to do nothing", name)
 			}
 		})
+	}
+}
+
+func TestRunSync(t *testing.T) {
+	service := &fakeService{syncRes: workflow.SyncResult{Branch: "feature", Base: "main", Ahead: 2}}
+	env, out, errOut := newEnv(service)
+
+	if code := Run(context.Background(), env, []string{"sync"}); code != ExitOK {
+		t.Errorf("Run() = %d, want %d", code, ExitOK)
+	}
+	if errOut.Len() != 0 {
+		t.Errorf("Run() error output = %q, want none", errOut.String())
+	}
+	if !strings.Contains(out.String(), "Syncing feature") {
+		t.Errorf("Run() output = %q, want the sync summary", out.String())
+	}
+	if service.syncCalls != 1 {
+		t.Errorf("syncCalls = %d, want 1", service.syncCalls)
+	}
+}
+
+func TestRunSyncRejectsArguments(t *testing.T) {
+	env, _, errOut := newEnv(&fakeService{})
+
+	if code := Run(context.Background(), env, []string{"sync", "extra"}); code != ExitUsage {
+		t.Errorf("Run() = %d, want %d", code, ExitUsage)
+	}
+	if !strings.Contains(errOut.String(), "sync takes no arguments") {
+		t.Errorf("Run() error output = %q, want it to explain the problem", errOut.String())
 	}
 }
 

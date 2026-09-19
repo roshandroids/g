@@ -26,6 +26,8 @@ type Repository interface {
 	Remotes(ctx context.Context, dir string) ([]string, error)
 	// RemoteBranchExists reports whether a remote has a branch called name.
 	RemoteBranchExists(ctx context.Context, dir, remote, name string) (bool, error)
+	// RemoteDefaultBranch reports the remote's default branch name, if known.
+	RemoteDefaultBranch(ctx context.Context, dir, remote string) (string, error)
 	// CreateBranch creates name from base and switches to it.
 	CreateBranch(ctx context.Context, dir, name, base string) error
 	// SwitchBranch switches to an existing branch.
@@ -34,6 +36,22 @@ type Repository interface {
 	Commit(ctx context.Context, dir, message string) error
 	// Push sends the current branch to its remote.
 	Push(ctx context.Context, dir string, opts git.PushOptions) error
+	// Fetch updates remote-tracking refs from remote.
+	Fetch(ctx context.Context, dir, remote string) error
+	// AheadBehind counts commits unique to left and right across left...right.
+	AheadBehind(ctx context.Context, dir, left, right string) (ahead, behind int, err error)
+	// RevParse resolves rev to a commit object name.
+	RevParse(ctx context.Context, dir, rev string) (string, error)
+	// FastForwardBranch moves branch to tip when the update is a fast-forward.
+	FastForwardBranch(ctx context.Context, dir, branch, tip string) error
+	// MergeFastForward fast-forwards the current branch to rev.
+	MergeFastForward(ctx context.Context, dir, rev string) error
+	// Rebase replays the current branch onto onto.
+	Rebase(ctx context.Context, dir, onto string) error
+	// PreserveChanges stashes local modifications temporarily.
+	PreserveChanges(ctx context.Context, dir, message string) (git.PreserveResult, error)
+	// RestoreChanges applies the most recent stash and drops it on success.
+	RestoreChanges(ctx context.Context, dir string) error
 }
 
 // Options configures a Service.

@@ -39,6 +39,8 @@ type Service interface {
 	Commit(ctx context.Context, dir string, req workflow.CommitRequest) (workflow.CommitResult, error)
 	// Push sends the current branch to its remote.
 	Push(ctx context.Context, dir string, req workflow.PushRequest) (workflow.PushResult, error)
+	// Sync updates the current branch from its base.
+	Sync(ctx context.Context, dir string) (workflow.SyncResult, error)
 }
 
 // Env carries the dependencies and streams a command needs.

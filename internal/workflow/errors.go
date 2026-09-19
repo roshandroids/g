@@ -31,7 +31,32 @@ var (
 	ErrNoRemote = errors.New("no remote is configured")
 	// ErrNoUpstream reports that the current branch tracks no remote branch.
 	ErrNoUpstream = errors.New("the branch has no upstream")
+	// ErrDivergentBase reports that the local base and its remote have diverged.
+	ErrDivergentBase = errors.New("base branch has diverged from its remote")
 )
+
+// DivergentBaseError reports that the local base cannot be fast-forwarded.
+type DivergentBaseError struct {
+	// Base is the local base branch.
+	Base string
+	// Remote is the remote that was consulted.
+	Remote string
+	// Ahead counts local commits the remote lacks.
+	Ahead int
+	// Behind counts remote commits the local base lacks.
+	Behind int
+}
+
+func (e *DivergentBaseError) Error() string {
+	return fmt.Sprintf(
+		"cannot update %s from %s: histories have diverged (%d local, %d remote commits); "+
+			"reconcile the base branch manually before running g sync",
+		e.Base, e.Remote, e.Ahead, e.Behind,
+	)
+}
+
+// Is reports the error as ErrDivergentBase.
+func (e *DivergentBaseError) Is(target error) bool { return target == ErrDivergentBase }
 
 // NoRemoteError reports that there is nowhere to push to.
 type NoRemoteError struct{}
