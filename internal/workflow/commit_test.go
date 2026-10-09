@@ -29,13 +29,13 @@ func TestServiceCommit(t *testing.T) {
 
 	result, err := NewService(repo, Options{}).Commit(context.Background(), branchTestDir, CommitRequest{
 		Type:    "fix",
-		Message: "resolve applicant history issue",
+		Message: "resolve inventory history issue",
 	})
 	if err != nil {
 		t.Fatalf("Commit() error = %v, want nil", err)
 	}
 
-	want := "fix: resolve applicant history issue"
+	want := "fix: resolve inventory history issue"
 	if result.Message != want {
 		t.Errorf("Message = %q, want %q", result.Message, want)
 	}

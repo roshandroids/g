@@ -15,12 +15,12 @@ import (
 // without executing any process. It is defined in fake_test.go.
 
 func TestServiceStatusSummarizesRepository(t *testing.T) {
-	const dir = "/work/nexus_applicant/lib"
+	const dir = "/work/demo_inventory/lib"
 
 	repo := &fakeRepository{status: git.Status{
-		Root:     "/work/nexus_applicant",
-		Branch:   "HCM-37538-applicant-id-update",
-		Upstream: "origin/HCM-37538-applicant-id-update",
+		Root:     "/work/demo_inventory",
+		Branch:   "PRJ-37538-inventory-id-update",
+		Upstream: "origin/PRJ-37538-inventory-id-update",
 		Ahead:    2,
 		Behind:   1,
 		Files: []git.FileChange{
@@ -38,14 +38,14 @@ func TestServiceStatusSummarizesRepository(t *testing.T) {
 		t.Fatalf("Status() error = %v, want nil", err)
 	}
 
-	if status.Name != "nexus_applicant" {
-		t.Errorf("Name = %q, want %q", status.Name, "nexus_applicant")
+	if status.Name != "demo_inventory" {
+		t.Errorf("Name = %q, want %q", status.Name, "demo_inventory")
 	}
-	if status.Root != "/work/nexus_applicant" {
-		t.Errorf("Root = %q, want %q", status.Root, "/work/nexus_applicant")
+	if status.Root != "/work/demo_inventory" {
+		t.Errorf("Root = %q, want %q", status.Root, "/work/demo_inventory")
 	}
-	if status.Branch != "HCM-37538-applicant-id-update" {
-		t.Errorf("Branch = %q, want %q", status.Branch, "HCM-37538-applicant-id-update")
+	if status.Branch != "PRJ-37538-inventory-id-update" {
+		t.Errorf("Branch = %q, want %q", status.Branch, "PRJ-37538-inventory-id-update")
 	}
 	if status.Detached {
 		t.Error("Detached = true, want false")
@@ -54,7 +54,7 @@ func TestServiceStatusSummarizesRepository(t *testing.T) {
 		t.Error("Clean() = true, want false for a dirty repository")
 	}
 
-	wantUpstream := &Upstream{Name: "origin/HCM-37538-applicant-id-update", Ahead: 2, Behind: 1}
+	wantUpstream := &Upstream{Name: "origin/PRJ-37538-inventory-id-update", Ahead: 2, Behind: 1}
 	if !reflect.DeepEqual(status.Upstream, wantUpstream) {
 		t.Errorf("Upstream = %+v, want %+v", status.Upstream, wantUpstream)
 	}

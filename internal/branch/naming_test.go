@@ -16,93 +16,93 @@ func TestPolicyName(t *testing.T) {
 		{
 			name:        "the documented example",
 			policy:      DefaultPolicy(),
-			key:         "HCM-37538",
-			description: "applicant id update",
-			want:        "HCM-37538-applicant-id-update",
+			key:         "PRJ-37538",
+			description: "inventory id update",
+			want:        "PRJ-37538-inventory-id-update",
 		},
 		{
 			name:        "without a description",
 			policy:      DefaultPolicy(),
-			key:         "HCM-37538",
+			key:         "PRJ-37538",
 			description: "",
-			want:        "HCM-37538",
+			want:        "PRJ-37538",
 		},
 		{
 			name:        "description that is only whitespace",
 			policy:      DefaultPolicy(),
-			key:         "HCM-37538",
+			key:         "PRJ-37538",
 			description: "   \t  ",
-			want:        "HCM-37538",
+			want:        "PRJ-37538",
 		},
 		{
 			name:        "description that is only punctuation",
 			policy:      DefaultPolicy(),
-			key:         "HCM-1",
+			key:         "PRJ-1",
 			description: "!!! ??? ...",
-			want:        "HCM-1",
+			want:        "PRJ-1",
 		},
 		{
 			name:        "repeated spaces collapse into one separator",
 			policy:      DefaultPolicy(),
-			key:         "HCM-1",
-			description: "applicant     id    update",
-			want:        "HCM-1-applicant-id-update",
+			key:         "PRJ-1",
+			description: "inventory     id    update",
+			want:        "PRJ-1-inventory-id-update",
 		},
 		{
 			name:        "surrounding punctuation is trimmed",
 			policy:      DefaultPolicy(),
-			key:         "HCM-1",
-			description: "  -- applicant id update --  ",
-			want:        "HCM-1-applicant-id-update",
+			key:         "PRJ-1",
+			description: "  -- inventory id update --  ",
+			want:        "PRJ-1-inventory-id-update",
 		},
 		{
 			name:        "punctuation inside words is replaced",
 			policy:      DefaultPolicy(),
-			key:         "HCM-1",
-			description: "applicant's id (final)",
-			want:        "HCM-1-applicant-s-id-final",
+			key:         "PRJ-1",
+			description: "inventory's id (final)",
+			want:        "PRJ-1-inventory-s-id-final",
 		},
 		{
 			name:        "already slugged description is left alone",
 			policy:      DefaultPolicy(),
-			key:         "HCM-1",
-			description: "applicant-id-update",
-			want:        "HCM-1-applicant-id-update",
+			key:         "PRJ-1",
+			description: "inventory-id-update",
+			want:        "PRJ-1-inventory-id-update",
 		},
 		{
 			name:        "upper case description is lowered",
 			policy:      DefaultPolicy(),
-			key:         "HCM-1",
-			description: "Applicant ID Update",
-			want:        "HCM-1-applicant-id-update",
+			key:         "PRJ-1",
+			description: "Inventory ID Update",
+			want:        "PRJ-1-inventory-id-update",
 		},
 		{
 			name:        "digits are kept",
 			policy:      DefaultPolicy(),
-			key:         "HCM-1",
+			key:         "PRJ-1",
 			description: "fix issue 2 of 12",
-			want:        "HCM-1-fix-issue-2-of-12",
+			want:        "PRJ-1-fix-issue-2-of-12",
 		},
 		{
 			name:        "lower case issue key is normalized",
 			policy:      DefaultPolicy(),
-			key:         "hcm-37538",
-			description: "applicant id update",
-			want:        "HCM-37538-applicant-id-update",
+			key:         "prj-37538",
+			description: "inventory id update",
+			want:        "PRJ-37538-inventory-id-update",
 		},
 		{
 			name:        "surrounding whitespace in the key is ignored",
 			policy:      DefaultPolicy(),
-			key:         "  HCM-37538  ",
-			description: "applicant id update",
-			want:        "HCM-37538-applicant-id-update",
+			key:         "  PRJ-37538  ",
+			description: "inventory id update",
+			want:        "PRJ-37538-inventory-id-update",
 		},
 		{
 			name:        "another project key is not special cased",
 			policy:      DefaultPolicy(),
-			key:         "NEXUS-7",
+			key:         "PRJ-7",
 			description: "wire up the thing",
-			want:        "NEXUS-7-wire-up-the-thing",
+			want:        "PRJ-7-wire-up-the-thing",
 		},
 		{
 			name:        "a project key containing digits",
@@ -114,44 +114,44 @@ func TestPolicyName(t *testing.T) {
 		{
 			name:        "underscore separator",
 			policy:      Policy{Separator: "_"},
-			key:         "HCM-1",
-			description: "applicant id update",
-			want:        "HCM-1_applicant_id_update",
+			key:         "PRJ-1",
+			description: "inventory id update",
+			want:        "PRJ-1_inventory_id_update",
 		},
 		{
 			name:        "slash separator",
 			policy:      Policy{Separator: "/"},
-			key:         "HCM-1",
-			description: "applicant id update",
-			want:        "HCM-1/applicant/id/update",
+			key:         "PRJ-1",
+			description: "inventory id update",
+			want:        "PRJ-1/inventory/id/update",
 		},
 		{
 			name:        "empty separator falls back to the default",
 			policy:      Policy{},
-			key:         "HCM-1",
-			description: "applicant id update",
-			want:        "HCM-1-applicant-id-update",
+			key:         "PRJ-1",
+			description: "inventory id update",
+			want:        "PRJ-1-inventory-id-update",
 		},
 		{
 			name:        "non-ascii description characters become separators",
 			policy:      DefaultPolicy(),
-			key:         "HCM-1",
+			key:         "PRJ-1",
 			description: "caf\u00e9 update",
-			want:        "HCM-1-caf-update",
+			want:        "PRJ-1-caf-update",
 		},
 		{
 			name:        "name exactly at the length limit is untouched",
 			policy:      Policy{Separator: "-", MaxLength: 29},
-			key:         "HCM-37538",
-			description: "applicant id update",
-			want:        "HCM-37538-applicant-id-update",
+			key:         "PRJ-37538",
+			description: "inventory id update",
+			want:        "PRJ-37538-inventory-id-update",
 		},
 		{
 			name:        "description that looks like a slug",
 			policy:      DefaultPolicy(),
-			key:         "HCM-1",
-			description: "fix: the applicant/id mapping",
-			want:        "HCM-1-fix-the-applicant-id-mapping",
+			key:         "PRJ-1",
+			description: "fix: the inventory/id mapping",
+			want:        "PRJ-1-fix-the-inventory-id-mapping",
 		},
 	}
 
@@ -180,12 +180,12 @@ func TestPolicyNameTruncates(t *testing.T) {
 		{
 			name:   "drops the trailing word that does not fit",
 			policy: Policy{Separator: "-", MaxLength: 15},
-			want:   "HCM-37538",
+			want:   "PRJ-37538",
 		},
 		{
 			name:   "keeps the words that fit",
 			policy: Policy{Separator: "-", MaxLength: 20},
-			want:   "HCM-37538-applicant",
+			want:   "PRJ-37538-inventory",
 		},
 		{
 			name:   "a limit shorter than the key is impossible",
@@ -195,13 +195,13 @@ func TestPolicyNameTruncates(t *testing.T) {
 		{
 			name:   "a limit equal to the key leaves the key alone",
 			policy: Policy{Separator: "-", MaxLength: 9},
-			want:   "HCM-37538",
+			want:   "PRJ-37538",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := test.policy.Name("HCM-37538", "applicant id update")
+			got, err := test.policy.Name("PRJ-37538", "inventory id update")
 			if test.want == "" {
 				if err == nil {
 					t.Fatalf("Name() = %q, want an error for an impossible limit", got)
@@ -231,22 +231,22 @@ func TestPolicyNameRejectsBadInput(t *testing.T) {
 		want        string
 	}{
 		{name: "empty key", policy: DefaultPolicy(), key: "", want: "invalid issue key"},
-		{name: "key without a number", policy: DefaultPolicy(), key: "HCM", want: "invalid issue key"},
+		{name: "key without a number", policy: DefaultPolicy(), key: "PRJ", want: "invalid issue key"},
 		{name: "key without a project", policy: DefaultPolicy(), key: "-1", want: "invalid issue key"},
 		{name: "key with a space", policy: DefaultPolicy(), key: "HC M-1", want: "invalid issue key"},
-		{name: "key with zero as the number", policy: DefaultPolicy(), key: "HCM-0", want: "invalid issue key"},
-		{name: "key with a slug", policy: DefaultPolicy(), key: "HCM-1-extra", want: "invalid issue key"},
-		{name: "key with a slash", policy: DefaultPolicy(), key: "HCM/1", want: "invalid issue key"},
+		{name: "key with zero as the number", policy: DefaultPolicy(), key: "PRJ-0", want: "invalid issue key"},
+		{name: "key with a slug", policy: DefaultPolicy(), key: "PRJ-1-extra", want: "invalid issue key"},
+		{name: "key with a slash", policy: DefaultPolicy(), key: "PRJ/1", want: "invalid issue key"},
 		{
 			name:   "separator that git would reject",
 			policy: Policy{Separator: ":"},
-			key:    "HCM-1",
+			key:    "PRJ-1",
 			want:   "invalid branch name separator",
 		},
 		{
 			name:   "separator that could build a range",
 			policy: Policy{Separator: ".."},
-			key:    "HCM-1",
+			key:    "PRJ-1",
 			want:   "invalid branch name separator",
 		},
 	}
@@ -270,20 +270,20 @@ func TestIssueKey(t *testing.T) {
 		want string
 		ok   bool
 	}{
-		{key: "HCM-37538", want: "HCM-37538", ok: true},
-		{key: "hcm-37538", want: "HCM-37538", ok: true},
-		{key: "  HCM-1  ", want: "HCM-1", ok: true},
+		{key: "PRJ-37538", want: "PRJ-37538", ok: true},
+		{key: "prj-37538", want: "PRJ-37538", ok: true},
+		{key: "  PRJ-1  ", want: "PRJ-1", ok: true},
 		{key: "A-1", want: "A-1", ok: true},
 		{key: "AB12-9", want: "AB12-9", ok: true},
 		{key: "CMIC-42", want: "CMIC-42", ok: true},
 		{key: "", ok: false},
 		{key: "   ", ok: false},
-		{key: "HCM", ok: false},
-		{key: "HCM-", ok: false},
+		{key: "PRJ", ok: false},
+		{key: "PRJ-", ok: false},
 		{key: "-1", ok: false},
 		{key: "1-2", ok: false},
-		{key: "HCM-01", ok: false},
-		{key: "HCM-1a", ok: false},
+		{key: "PRJ-01", ok: false},
+		{key: "PRJ-1a", ok: false},
 		{key: "HC-M-1", ok: false},
 	}
 
@@ -313,7 +313,7 @@ func TestSlug(t *testing.T) {
 		separator string
 		want      string
 	}{
-		{name: "simple words", text: "applicant id update", separator: "-", want: "applicant-id-update"},
+		{name: "simple words", text: "inventory id update", separator: "-", want: "inventory-id-update"},
 		{name: "empty", text: "", separator: "-", want: ""},
 		{name: "only separators", text: "---", separator: "-", want: ""},
 		{name: "leading and trailing", text: "  hi  ", separator: "-", want: "hi"},
@@ -337,7 +337,7 @@ func TestSlug(t *testing.T) {
 func TestValidate(t *testing.T) {
 	valid := []string{
 		"main",
-		"HCM-37538-applicant-id-update",
+		"PRJ-37538-inventory-id-update",
 		"feature/branch-workflows",
 		"a/b/c",
 		"release-1.2",
@@ -399,14 +399,14 @@ func TestValidate(t *testing.T) {
 func TestPolicyNameStaysWithinTheLimit(t *testing.T) {
 	policy := Policy{Separator: "-", MaxLength: 30}
 
-	name, err := policy.Name("HCM-1", "a very long description that will not fit in the branch name")
+	name, err := policy.Name("PRJ-1", "a very long description that will not fit in the branch name")
 	if err != nil {
 		t.Fatalf("Name() error = %v, want nil", err)
 	}
 	if len(name) > policy.MaxLength {
 		t.Errorf("Name() = %q (%d characters), want at most %d", name, len(name), policy.MaxLength)
 	}
-	if !strings.HasPrefix(name, "HCM-1") {
+	if !strings.HasPrefix(name, "PRJ-1") {
 		t.Errorf("Name() = %q, want it to preserve the issue key", name)
 	}
 }

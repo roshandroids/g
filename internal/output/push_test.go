@@ -15,18 +15,18 @@ func TestRenderPush(t *testing.T) {
 	}{
 		{
 			name:   "an ordinary push",
-			result: workflow.PushResult{Branch: "HCM-1-work", Upstream: "origin/HCM-1-work"},
-			want:   "Pushed HCM-1-work to origin/HCM-1-work\n",
+			result: workflow.PushResult{Branch: "PRJ-1-work", Upstream: "origin/PRJ-1-work"},
+			want:   "Pushed PRJ-1-work to origin/PRJ-1-work\n",
 		},
 		{
 			name:   "a push that created the upstream",
-			result: workflow.PushResult{Branch: "HCM-1-work", Upstream: "origin/HCM-1-work", SetUpstream: true},
-			want:   "Pushed HCM-1-work and set upstream to origin/HCM-1-work\n",
+			result: workflow.PushResult{Branch: "PRJ-1-work", Upstream: "origin/PRJ-1-work", SetUpstream: true},
+			want:   "Pushed PRJ-1-work and set upstream to origin/PRJ-1-work\n",
 		},
 		{
 			name:   "a forced push names the flag it used",
-			result: workflow.PushResult{Branch: "HCM-1-work", Upstream: "origin/HCM-1-work", Forced: true},
-			want:   "Force-pushed HCM-1-work to origin/HCM-1-work (--force-with-lease)\n",
+			result: workflow.PushResult{Branch: "PRJ-1-work", Upstream: "origin/PRJ-1-work", Forced: true},
+			want:   "Force-pushed PRJ-1-work to origin/PRJ-1-work (--force-with-lease)\n",
 		},
 	}
 

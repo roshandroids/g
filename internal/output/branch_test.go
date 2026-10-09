@@ -11,14 +11,14 @@ func TestRenderNewBranch(t *testing.T) {
 	var b strings.Builder
 
 	err := RenderNewBranch(&b, workflow.NewBranchResult{
-		Branch: "HCM-37538-applicant-id-update",
+		Branch: "PRJ-37538-inventory-id-update",
 		Base:   "main",
 	})
 	if err != nil {
 		t.Fatalf("RenderNewBranch() error = %v, want nil", err)
 	}
 
-	want := "Created branch HCM-37538-applicant-id-update from main\n"
+	want := "Created branch PRJ-37538-inventory-id-update from main\n"
 	if got := b.String(); got != want {
 		t.Errorf("RenderNewBranch() = %q, want %q", got, want)
 	}
@@ -28,7 +28,7 @@ func TestRenderNewBranchWithNotes(t *testing.T) {
 	var b strings.Builder
 
 	err := RenderNewBranch(&b, workflow.NewBranchResult{
-		Branch:       "HCM-1-work",
+		Branch:       "PRJ-1-work",
 		Base:         "master",
 		Dirty:        true,
 		RemoteExists: true,
@@ -40,9 +40,9 @@ func TestRenderNewBranchWithNotes(t *testing.T) {
 
 	got := b.String()
 	for _, want := range []string{
-		"Created branch HCM-1-work from master\n",
+		"Created branch PRJ-1-work from master\n",
 		"uncommitted changes moved with you",
-		"origin already has a branch called HCM-1-work",
+		"origin already has a branch called PRJ-1-work",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("RenderNewBranch() = %q, want it to contain %q", got, want)
@@ -53,7 +53,7 @@ func TestRenderNewBranchWithNotes(t *testing.T) {
 func TestRenderNewBranchOmitsAbsentNotes(t *testing.T) {
 	var b strings.Builder
 
-	if err := RenderNewBranch(&b, workflow.NewBranchResult{Branch: "HCM-1", Base: "main"}); err != nil {
+	if err := RenderNewBranch(&b, workflow.NewBranchResult{Branch: "PRJ-1", Base: "main"}); err != nil {
 		t.Fatalf("RenderNewBranch() error = %v, want nil", err)
 	}
 
@@ -66,7 +66,7 @@ func TestRenderNewBranchOmitsAbsentNotes(t *testing.T) {
 }
 
 func TestRenderNewBranchReportsWriteFailure(t *testing.T) {
-	if err := RenderNewBranch(failingWriter{}, workflow.NewBranchResult{Branch: "HCM-1"}); err == nil {
+	if err := RenderNewBranch(failingWriter{}, workflow.NewBranchResult{Branch: "PRJ-1"}); err == nil {
 		t.Fatal("RenderNewBranch() error = nil, want the write failure")
 	}
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/roshandroids/g/internal/git"
 )
 
-const branchTestDir = "/work/nexus_applicant"
+const branchTestDir = "/work/demo_inventory"
 
 // cleanMain is the repository state most tests start from: on main, nothing
 // staged, nothing paused.
@@ -26,14 +26,14 @@ func TestServiceNewBranch(t *testing.T) {
 	repo := cleanMain()
 
 	result, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{
-		Ticket:      "HCM-37538",
-		Description: "applicant id update",
+		Ticket:      "PRJ-37538",
+		Description: "inventory id update",
 	})
 	if err != nil {
 		t.Fatalf("NewBranch() error = %v, want nil", err)
 	}
 
-	if want := "HCM-37538-applicant-id-update"; result.Branch != want {
+	if want := "PRJ-37538-inventory-id-update"; result.Branch != want {
 		t.Errorf("Branch = %q, want %q", result.Branch, want)
 	}
 	if result.Base != "main" {
@@ -46,7 +46,7 @@ func TestServiceNewBranch(t *testing.T) {
 		t.Error("RemoteExists = true, want false when no remote has the branch")
 	}
 
-	want := []createCall{{name: "HCM-37538-applicant-id-update", base: "main"}}
+	want := []createCall{{name: "PRJ-37538-inventory-id-update", base: "main"}}
 	if !reflect.DeepEqual(repo.createCalls, want) {
 		t.Errorf("CreateBranch calls = %+v, want %+v", repo.createCalls, want)
 	}
@@ -61,7 +61,7 @@ func TestServiceNewBranchFallsBackToMaster(t *testing.T) {
 	}
 
 	result, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{
-		Ticket: "HCM-1",
+		Ticket: "PRJ-1",
 	})
 	if err != nil {
 		t.Fatalf("NewBranch() error = %v, want nil", err)
@@ -78,7 +78,7 @@ func TestServiceNewBranchPrefersTheConfiguredBase(t *testing.T) {
 	}
 
 	opts := Options{DefaultBaseBranch: "develop"}
-	result, err := NewService(repo, opts).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "HCM-1"})
+	result, err := NewService(repo, opts).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "PRJ-1"})
 	if err != nil {
 		t.Fatalf("NewBranch() error = %v, want nil", err)
 	}
@@ -90,11 +90,11 @@ func TestServiceNewBranchPrefersTheConfiguredBase(t *testing.T) {
 func TestServiceNewBranchWithoutADescriptionUsesTheKeyAlone(t *testing.T) {
 	repo := cleanMain()
 
-	result, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "HCM-37538"})
+	result, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "PRJ-37538"})
 	if err != nil {
 		t.Fatalf("NewBranch() error = %v, want nil", err)
 	}
-	if want := "HCM-37538"; result.Branch != want {
+	if want := "PRJ-37538"; result.Branch != want {
 		t.Errorf("Branch = %q, want %q", result.Branch, want)
 	}
 }
@@ -106,7 +106,7 @@ func TestServiceNewBranchReportsADirtyTree(t *testing.T) {
 	repo := cleanMain()
 	repo.status.Files = []git.FileChange{{Path: "lib/foo.dart", Worktree: git.Modified}}
 
-	result, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "HCM-1"})
+	result, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "PRJ-1"})
 	if err != nil {
 		t.Fatalf("NewBranch() error = %v, want nil", err)
 	}
@@ -121,10 +121,10 @@ func TestServiceNewBranchReportsADirtyTree(t *testing.T) {
 func TestServiceNewBranchReportsAnExistingRemoteBranch(t *testing.T) {
 	repo := cleanMain()
 	repo.remotes = []string{"origin"}
-	repo.remoteBranches = map[string]bool{"origin/HCM-1-work": true}
+	repo.remoteBranches = map[string]bool{"origin/PRJ-1-work": true}
 
 	result, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{
-		Ticket:      "HCM-1",
+		Ticket:      "PRJ-1",
 		Description: "work",
 	})
 	if err != nil {
@@ -143,16 +143,16 @@ func TestServiceNewBranchReportsAnExistingRemoteBranch(t *testing.T) {
 
 func TestServiceNewBranchRejectsAnExistingBranch(t *testing.T) {
 	repo := cleanMain()
-	repo.branches = append(repo.branches, "HCM-1-work")
+	repo.branches = append(repo.branches, "PRJ-1-work")
 
 	_, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{
-		Ticket:      "HCM-1",
+		Ticket:      "PRJ-1",
 		Description: "work",
 	})
 	if !errors.Is(err, ErrBranchExists) {
 		t.Fatalf("NewBranch() error = %v, want ErrBranchExists", err)
 	}
-	if !strings.Contains(err.Error(), "HCM-1-work") {
+	if !strings.Contains(err.Error(), "PRJ-1-work") {
 		t.Errorf("NewBranch() error = %v, want it to name the branch", err)
 	}
 	if len(repo.createCalls) != 0 {
@@ -181,7 +181,7 @@ func TestServiceNewBranchRejectsADetachedHead(t *testing.T) {
 		branches: []string{"main"},
 	}
 
-	_, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "HCM-1"})
+	_, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "PRJ-1"})
 	if !errors.Is(err, ErrDetachedHead) {
 		t.Fatalf("NewBranch() error = %v, want ErrDetachedHead", err)
 	}
@@ -204,7 +204,7 @@ func TestServiceNewBranchRejectsAnOperationInProgress(t *testing.T) {
 			repo := cleanMain()
 			repo.status.Operation = operation
 
-			_, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "HCM-1"})
+			_, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "PRJ-1"})
 			if !errors.Is(err, ErrOperationInProgress) {
 				t.Fatalf("NewBranch() error = %v, want ErrOperationInProgress", err)
 			}
@@ -226,7 +226,7 @@ func TestServiceNewBranchPrefersTheOperationOverDetachedHead(t *testing.T) {
 	repo.status.Head = "a1b2c3d"
 	repo.status.Operation = git.OperationRebase
 
-	_, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "HCM-1"})
+	_, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "PRJ-1"})
 	if !errors.Is(err, ErrOperationInProgress) {
 		t.Fatalf("NewBranch() error = %v, want ErrOperationInProgress", err)
 	}
@@ -235,7 +235,7 @@ func TestServiceNewBranchPrefersTheOperationOverDetachedHead(t *testing.T) {
 func TestServiceNewBranchRejectsAnUnusableRepository(t *testing.T) {
 	repo := &fakeRepository{statusErr: fmt.Errorf("%w: %s", git.ErrNotARepository, branchTestDir)}
 
-	_, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "HCM-1"})
+	_, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "PRJ-1"})
 	if !errors.Is(err, ErrNotARepository) {
 		t.Fatalf("NewBranch() error = %v, want ErrNotARepository", err)
 	}
@@ -247,7 +247,7 @@ func TestServiceNewBranchWithoutABaseBranch(t *testing.T) {
 		branches: []string{"topic"},
 	}
 
-	_, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "HCM-1"})
+	_, err := NewService(repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "PRJ-1"})
 	if err == nil {
 		t.Fatal("NewBranch() error = nil, want a base branch error")
 	}
@@ -300,7 +300,7 @@ func TestServiceNewBranchPropagatesFailures(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := NewService(test.repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "HCM-1"})
+			_, err := NewService(test.repo, Options{}).NewBranch(context.Background(), branchTestDir, NewBranchRequest{Ticket: "PRJ-1"})
 			if err == nil {
 				t.Fatal("NewBranch() error = nil, want the underlying failure")
 			}
@@ -469,13 +469,13 @@ func TestServiceNewBranchHonoursTheConfiguredSeparator(t *testing.T) {
 
 	opts := Options{BranchSeparator: "_"}
 	result, err := NewService(repo, opts).NewBranch(context.Background(), branchTestDir, NewBranchRequest{
-		Ticket:      "HCM-1",
-		Description: "applicant id update",
+		Ticket:      "PRJ-1",
+		Description: "inventory id update",
 	})
 	if err != nil {
 		t.Fatalf("NewBranch() error = %v, want nil", err)
 	}
-	if want := "HCM-1_applicant_id_update"; result.Branch != want {
+	if want := "PRJ-1_inventory_id_update"; result.Branch != want {
 		t.Errorf("Branch = %q, want %q", result.Branch, want)
 	}
 }

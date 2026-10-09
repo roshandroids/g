@@ -43,8 +43,8 @@ func DefaultPolicy() Policy {
 // Name builds the branch name for an issue key and a description.
 //
 // The issue key is preserved in upper case and the description is reduced to a
-// slug, so `HCM-37538` and `"applicant id update"` become
-// `HCM-37538-applicant-id-update`. A description that reduces to nothing leaves
+// slug, so `PRJ-37538` and `"inventory id update"` become
+// `PRJ-37538-inventory-id-update`. A description that reduces to nothing leaves
 // the issue key alone rather than producing a trailing separator.
 func (p Policy) Name(key, description string) (string, error) {
 	issue, err := IssueKey(key)
@@ -91,7 +91,7 @@ var issueKeyPattern = regexp.MustCompile(`^[A-Z][A-Z0-9]*-[1-9][0-9]*$`)
 func IssueKey(key string) (string, error) {
 	normalized := strings.ToUpper(strings.TrimSpace(key))
 	if !issueKeyPattern.MatchString(normalized) {
-		return "", fmt.Errorf("invalid issue key %q: expected a key like HCM-37538", key)
+		return "", fmt.Errorf("invalid issue key %q: expected a key like PRJ-37538", key)
 	}
 	return normalized, nil
 }

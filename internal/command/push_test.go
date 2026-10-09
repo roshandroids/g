@@ -10,7 +10,7 @@ import (
 )
 
 func TestRunPush(t *testing.T) {
-	service := &fakeService{pushRes: workflow.PushResult{Branch: "HCM-1-work", Upstream: "origin/HCM-1-work"}}
+	service := &fakeService{pushRes: workflow.PushResult{Branch: "PRJ-1-work", Upstream: "origin/PRJ-1-work"}}
 	env, out, errOut := newEnv(service)
 
 	if code := Run(context.Background(), env, []string{"push"}); code != ExitOK {
@@ -25,7 +25,7 @@ func TestRunPush(t *testing.T) {
 	if service.pushReq.Force {
 		t.Error("Force = true, want a plain push by default")
 	}
-	if !strings.Contains(out.String(), "Pushed HCM-1-work to origin/HCM-1-work") {
+	if !strings.Contains(out.String(), "Pushed PRJ-1-work to origin/PRJ-1-work") {
 		t.Errorf("Run() output = %q, want it to report the push", out.String())
 	}
 }
@@ -51,8 +51,8 @@ func TestRunPushRejectsUnexpectedArguments(t *testing.T) {
 
 func TestRunPushReportsANewUpstream(t *testing.T) {
 	service := &fakeService{pushRes: workflow.PushResult{
-		Branch:      "HCM-1-work",
-		Upstream:    "origin/HCM-1-work",
+		Branch:      "PRJ-1-work",
+		Upstream:    "origin/PRJ-1-work",
 		SetUpstream: true,
 	}}
 	env, out, _ := newEnv(service)
@@ -63,7 +63,7 @@ func TestRunPushReportsANewUpstream(t *testing.T) {
 	if service.pushCalls != 1 {
 		t.Errorf("Push calls = %d, want 1", service.pushCalls)
 	}
-	if !strings.Contains(out.String(), "set upstream to origin/HCM-1-work") {
+	if !strings.Contains(out.String(), "set upstream to origin/PRJ-1-work") {
 		t.Errorf("Run() output = %q, want it to report the new upstream", out.String())
 	}
 }

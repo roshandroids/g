@@ -15,7 +15,7 @@ import (
 func TestClientLocalBranches(t *testing.T) {
 	runner := newScriptedRunner().respond(
 		"for-each-ref --format=%(refname:short) refs/heads",
-		process.Result{Stdout: "main\nfeature/x\nHCM-1-work\n\n"},
+		process.Result{Stdout: "main\nfeature/x\nPRJ-1-work\n\n"},
 	)
 
 	got, err := NewClient(runner).LocalBranches(context.Background(), testRoot)
@@ -23,7 +23,7 @@ func TestClientLocalBranches(t *testing.T) {
 		t.Fatalf("LocalBranches() error = %v, want nil", err)
 	}
 
-	want := []string{"HCM-1-work", "feature/x", "main"}
+	want := []string{"PRJ-1-work", "feature/x", "main"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("LocalBranches() = %v, want %v", got, want)
 	}
@@ -76,7 +76,7 @@ func TestClientRemoteBranchExists(t *testing.T) {
 		stdout string
 		want   bool
 	}{
-		{name: "present", stdout: "origin/HCM-1-work\n", want: true},
+		{name: "present", stdout: "origin/PRJ-1-work\n", want: true},
 		{name: "absent", stdout: "", want: false},
 		{name: "blank", stdout: "\n", want: false},
 	}
@@ -84,11 +84,11 @@ func TestClientRemoteBranchExists(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			runner := newScriptedRunner().respond(
-				"for-each-ref --format=%(refname:short) refs/remotes/origin/HCM-1-work",
+				"for-each-ref --format=%(refname:short) refs/remotes/origin/PRJ-1-work",
 				process.Result{Stdout: test.stdout},
 			)
 
-			got, err := NewClient(runner).RemoteBranchExists(context.Background(), testRoot, "origin", "HCM-1-work")
+			got, err := NewClient(runner).RemoteBranchExists(context.Background(), testRoot, "origin", "PRJ-1-work")
 			if err != nil {
 				t.Fatalf("RemoteBranchExists() error = %v, want nil", err)
 			}
@@ -100,14 +100,14 @@ func TestClientRemoteBranchExists(t *testing.T) {
 }
 
 func TestClientCreateBranch(t *testing.T) {
-	runner := newScriptedRunner().respond("switch -c HCM-1-work main", process.Result{})
+	runner := newScriptedRunner().respond("switch -c PRJ-1-work main", process.Result{})
 
-	err := NewClient(runner).CreateBranch(context.Background(), testRoot, "HCM-1-work", "main")
+	err := NewClient(runner).CreateBranch(context.Background(), testRoot, "PRJ-1-work", "main")
 	if err != nil {
 		t.Fatalf("CreateBranch() error = %v, want nil", err)
 	}
 
-	want := "git switch -c HCM-1-work main"
+	want := "git switch -c PRJ-1-work main"
 	if len(runner.calls) != 1 || runner.calls[0].String() != want {
 		t.Errorf("invocations = %v, want exactly %q", runner.calls, want)
 	}
@@ -117,12 +117,12 @@ func TestClientCreateBranch(t *testing.T) {
 }
 
 func TestClientCreateBranchReportsGitFailure(t *testing.T) {
-	runner := newScriptedRunner().respond("switch -c HCM-1-work nope", process.Result{
+	runner := newScriptedRunner().respond("switch -c PRJ-1-work nope", process.Result{
 		ExitCode: 128,
 		Stderr:   "fatal: invalid reference: nope\n",
 	})
 
-	err := NewClient(runner).CreateBranch(context.Background(), testRoot, "HCM-1-work", "nope")
+	err := NewClient(runner).CreateBranch(context.Background(), testRoot, "PRJ-1-work", "nope")
 
 	var commandErr *CommandError
 	if !errors.As(err, &commandErr) {

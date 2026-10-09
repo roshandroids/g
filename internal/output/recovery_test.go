@@ -32,7 +32,7 @@ func TestRenderUndo(t *testing.T) {
 	var b strings.Builder
 	err := RenderUndo(&b, workflow.UndoResult{
 		Count:   1,
-		Commits: []git.CommitSummary{{Hash: "abc1234", Subject: "fix: resolve applicant history issue"}},
+		Commits: []git.CommitSummary{{Hash: "abc1234", Subject: "fix: resolve inventory history issue"}},
 	})
 	if err != nil {
 		t.Fatalf("RenderUndo() error = %v", err)
@@ -40,7 +40,7 @@ func TestRenderUndo(t *testing.T) {
 	got := b.String()
 	for _, want := range []string{
 		"Undoing last commit:",
-		"abc1234 fix: resolve applicant history issue",
+		"abc1234 fix: resolve inventory history issue",
 		"Commit removed.",
 		"Changes preserved and staged.",
 	} {
@@ -67,10 +67,10 @@ func TestRenderUndoWarnsAboutUpstream(t *testing.T) {
 func TestRenderCleanPreview(t *testing.T) {
 	var b strings.Builder
 	_ = RenderClean(&b, workflow.CleanResult{
-		Candidates: []git.StaleBranch{{Name: "HCM-123-old-feature", Reason: git.StaleMerged, Safe: true}},
+		Candidates: []git.StaleBranch{{Name: "PRJ-123-old-feature", Reason: git.StaleMerged, Safe: true}},
 	})
 	got := b.String()
-	for _, want := range []string{"Stale local branches:", "HCM-123-old-feature", "Preview only. No branches deleted."} {
+	for _, want := range []string{"Stale local branches:", "PRJ-123-old-feature", "Preview only. No branches deleted."} {
 		if !strings.Contains(got, want) {
 			t.Errorf("RenderClean() missing %q:\n%s", want, got)
 		}

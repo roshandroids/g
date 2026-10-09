@@ -12,7 +12,7 @@ import (
 )
 
 // testRoot is the work tree the scripted git responses report.
-const testRoot = "/work/nexus_applicant"
+const testRoot = "/work/demo_inventory"
 
 // scriptedRunner answers git invocations from a table and records every
 // invocation it receives. An unregistered invocation is an error, so a client

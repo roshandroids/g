@@ -10,42 +10,42 @@ anything `g` does not do.
 Starting a piece of work and recording it:
 
 ```console
-$ g new HCM-37538 "applicant id update"
-Created branch HCM-37538-applicant-id-update from main
+$ g new PRJ-37538 "inventory id update"
+Created branch PRJ-37538-inventory-id-update from main
 
-$ git add lib/applicant/history.dart
-$ g commit fix "resolve applicant history issue"
+$ git add lib/inventory/history.dart
+$ g commit fix "resolve inventory history issue"
 Committed:
-  modified     lib/applicant/history.dart
+  modified     lib/inventory/history.dart
 
-fix: resolve applicant history issue
+fix: resolve inventory history issue
 
 $ g push
-Pushed HCM-37538-applicant-id-update to origin/HCM-37538-applicant-id-update
+Pushed PRJ-37538-inventory-id-update to origin/PRJ-37538-inventory-id-update
 
 $ g switch main
-Switched to branch main (from HCM-37538-applicant-id-update)
+Switched to branch main (from PRJ-37538-inventory-id-update)
 ```
 
 Understanding where you are:
 
 ```console
 $ g status
-Repository: nexus_applicant
-Root:       /Users/me/Projects/nexus_applicant
-Branch:     HCM-37538-applicant-id-update
-Upstream:   origin/HCM-37538-applicant-id-update
+Repository: demo_inventory
+Root:       /Users/me/Projects/demo_inventory
+Branch:     PRJ-37538-inventory-id-update
+Upstream:   origin/PRJ-37538-inventory-id-update
 
 Working tree: dirty
 
 Staged:
-  added        lib/applicant/history.dart
+  added        lib/inventory/history.dart
 
 Unstaged:
-  modified     lib/applicant/history.dart
+  modified     lib/inventory/history.dart
 
 Untracked:
-  test/applicant/history_test.dart
+  test/inventory/history_test.dart
 
 Ahead:  2
 Behind: 0
@@ -119,8 +119,8 @@ HEAD and leave you to work out why. The two facts are shown together:
 
 ```console
 $ g status
-Repository: nexus_applicant
-Root:       /Users/me/Projects/nexus_applicant
+Repository: demo_inventory
+Root:       /Users/me/Projects/demo_inventory
 Branch:     detached at 81f45c8
 Upstream:   none
 Operation:  rebase in progress
@@ -128,15 +128,15 @@ Operation:  rebase in progress
 Working tree: dirty
 
 Conflicted:
-  lib/applicant/history.dart
+  lib/inventory/history.dart
 ```
 
 ### `g new <ticket> [description]`
 
 Creates a branch named after the work and switches to it. The issue key is
 preserved in upper case and the description is reduced to a slug, so
-`g new hcm-37538 "applicant id UPDATE!!"` produces
-`HCM-37538-applicant-id-update`. Spaces, punctuation, repeated separators and
+`g new prj-37538 "inventory id UPDATE!!"` produces
+`PRJ-37538-inventory-id-update`. Spaces, punctuation, repeated separators and
 characters that are invalid in a Git ref all collapse into single separators, and
 a description that reduces to nothing leaves the issue key on its own.
 
@@ -174,11 +174,11 @@ make a switch succeed.
 ### `g commit <type> <message>`
 
 ```console
-$ g commit fix "resolve applicant history issue"
+$ g commit fix "resolve inventory history issue"
 Committed:
-  modified     lib/applicant/history.dart
+  modified     lib/inventory/history.dart
 
-fix: resolve applicant history issue
+fix: resolve inventory history issue
 ```
 
 The type must be one of `feat`, `fix`, `ui`, `refactor`, `test`, `docs`,
@@ -206,7 +206,7 @@ reachable only from `HEAD`.
 
 ```console
 $ g push
-Pushed HCM-37538-applicant-id-update to origin/HCM-37538-applicant-id-update
+Pushed PRJ-37538-inventory-id-update to origin/PRJ-37538-inventory-id-update
 ```
 
 A branch that already tracks a remote is pushed with a plain `git push`, naming
@@ -220,7 +220,7 @@ upstream was set:
 
 ```console
 $ g push
-Pushed HCM-37538-applicant-id-update and set upstream to origin/HCM-37538-applicant-id-update
+Pushed PRJ-37538-inventory-id-update and set upstream to origin/PRJ-37538-inventory-id-update
 ```
 
 **`--force` is not a shorthand for "push harder".** It is a separate, explicit
@@ -230,7 +230,7 @@ and it is never part of a normal `g push`. It always asks first:
 ```console
 $ g push --force
 Force-push with --force-with-lease, replacing the remote branch if it has moved? [y/N] y
-Force-pushed HCM-37538-applicant-id-update to origin/HCM-37538-applicant-id-update (--force-with-lease)
+Force-pushed PRJ-37538-inventory-id-update to origin/PRJ-37538-inventory-id-update (--force-with-lease)
 ```
 
 The underlying command is always `git push --force-with-lease`, which still
@@ -251,16 +251,16 @@ rather than something `g` gets to decide.
 
 ```console
 $ g sync
-Syncing HCM-37538-applicant-id-update
+Syncing PRJ-37538-inventory-id-update
 
 Base: main
 Fetching origin...
 Updating main...
-Rebasing HCM-37538-applicant-id-update onto main...
+Rebasing PRJ-37538-inventory-id-update onto main...
 
 Sync complete.
 
-Branch: HCM-37538-applicant-id-update
+Branch: PRJ-37538-inventory-id-update
 Base:   main
 Ahead:  3
 Behind: 0
@@ -332,7 +332,7 @@ matching `git <op> --abort`. It never aborts without asking.
 ```console
 $ g undo
 Undoing last commit:
-  abc1234 fix: resolve applicant history issue
+  abc1234 fix: resolve inventory history issue
 
 Commit removed.
 Changes preserved and staged.
@@ -350,8 +350,8 @@ needed — nothing is pushed automatically.
 $ g clean
 Stale local branches:
 
-  HCM-123-old-feature (merged)
-  HCM-456-completed (gone)
+  PRJ-123-old-feature (merged)
+  PRJ-456-completed (gone)
 
 Preview only. No branches deleted.
 Run `g clean --apply` to delete them after confirmation.

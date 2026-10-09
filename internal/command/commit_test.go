@@ -11,12 +11,12 @@ import (
 
 func TestRunCommit(t *testing.T) {
 	service := &fakeService{commitRes: workflow.CommitResult{
-		Message: "fix: resolve applicant history issue",
+		Message: "fix: resolve inventory history issue",
 		Staged:  []workflow.Change{{Path: "lib/foo.dart", Kind: git.Modified}},
 	}}
 	env, out, errOut := newEnv(service)
 
-	code := Run(context.Background(), env, []string{"commit", "fix", "resolve applicant history issue"})
+	code := Run(context.Background(), env, []string{"commit", "fix", "resolve inventory history issue"})
 	if code != ExitOK {
 		t.Errorf("Run() = %d, want %d", code, ExitOK)
 	}
@@ -24,7 +24,7 @@ func TestRunCommit(t *testing.T) {
 		t.Errorf("Run() error output = %q, want none", errOut.String())
 	}
 
-	want := workflow.CommitRequest{Type: "fix", Message: "resolve applicant history issue"}
+	want := workflow.CommitRequest{Type: "fix", Message: "resolve inventory history issue"}
 	if service.commitReq != want {
 		t.Errorf("Commit request = %+v, want %+v", service.commitReq, want)
 	}
@@ -36,7 +36,7 @@ func TestRunCommit(t *testing.T) {
 	if !strings.Contains(got, "Committed:") {
 		t.Errorf("Run() output = %q, want it to list what was committed", got)
 	}
-	if !strings.Contains(got, "fix: resolve applicant history issue") {
+	if !strings.Contains(got, "fix: resolve inventory history issue") {
 		t.Errorf("Run() output = %q, want it to show the message", got)
 	}
 }

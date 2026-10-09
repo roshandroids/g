@@ -11,16 +11,16 @@ import (
 
 func TestRenderStatusCleanRepository(t *testing.T) {
 	status := workflow.Status{
-		Name:     "nexus_applicant",
-		Root:     "/work/nexus_applicant",
-		Branch:   "HCM-37538-applicant-id-update",
-		Upstream: &workflow.Upstream{Name: "origin/HCM-37538-applicant-id-update"},
+		Name:     "demo_inventory",
+		Root:     "/work/demo_inventory",
+		Branch:   "PRJ-37538-inventory-id-update",
+		Upstream: &workflow.Upstream{Name: "origin/PRJ-37538-inventory-id-update"},
 	}
 
-	want := "Repository: nexus_applicant\n" +
-		"Root:       /work/nexus_applicant\n" +
-		"Branch:     HCM-37538-applicant-id-update\n" +
-		"Upstream:   origin/HCM-37538-applicant-id-update\n" +
+	want := "Repository: demo_inventory\n" +
+		"Root:       /work/demo_inventory\n" +
+		"Branch:     PRJ-37538-inventory-id-update\n" +
+		"Upstream:   origin/PRJ-37538-inventory-id-update\n" +
 		"\n" +
 		"Working tree: clean\n" +
 		"\n" +
