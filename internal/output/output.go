@@ -44,7 +44,7 @@ func RenderStatus(w io.Writer, s workflow.Status) error {
 	// A paused operation explains an otherwise puzzling detached HEAD, so it is
 	// reported next to the branch rather than buried in the change list.
 	if s.Operation != "" {
-		field(&b, "Operation:", string(s.Operation)+" in progress")
+		field(&b, "Operation:", OperationLabel(s.Operation)+" in progress")
 	}
 
 	// The clean/dirty verdict is stated rather than left to be inferred from

@@ -11,6 +11,7 @@ import (
 	"io"
 
 	"github.com/roshandroids/g/internal/config"
+	"github.com/roshandroids/g/internal/git"
 	"github.com/roshandroids/g/internal/github"
 	"github.com/roshandroids/g/internal/prompt"
 	"github.com/roshandroids/g/internal/workflow"
@@ -41,6 +42,16 @@ type Service interface {
 	Push(ctx context.Context, dir string, req workflow.PushRequest) (workflow.PushResult, error)
 	// Sync updates the current branch from its base.
 	Sync(ctx context.Context, dir string) (workflow.SyncResult, error)
+	// Continue resumes a paused Git operation.
+	Continue(ctx context.Context, dir string) (workflow.ContinueResult, error)
+	// CurrentOperation reports the paused operation, if any.
+	CurrentOperation(ctx context.Context, dir string) (git.Operation, error)
+	// Abort cancels a paused Git operation.
+	Abort(ctx context.Context, dir string) (workflow.AbortResult, error)
+	// Undo removes recent commits while keeping their changes staged.
+	Undo(ctx context.Context, dir string, count int) (workflow.UndoResult, error)
+	// Clean previews or deletes stale local branches.
+	Clean(ctx context.Context, dir string, req workflow.CleanRequest) (workflow.CleanResult, error)
 }
 
 // Env carries the dependencies and streams a command needs.

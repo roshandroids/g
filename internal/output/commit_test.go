@@ -13,7 +13,7 @@ func TestRenderCommit(t *testing.T) {
 	var b strings.Builder
 
 	err := RenderCommit(&b, workflow.CommitResult{
-		Message: "fix: resolve applicant history issue",
+		Message: "fix: resolve inventory history issue",
 		Type:    commit.Fix,
 		Staged: []workflow.Change{
 			{Path: "lib/foo.dart", Kind: git.Modified},
@@ -28,7 +28,7 @@ func TestRenderCommit(t *testing.T) {
 		"  modified     lib/foo.dart\n" +
 		"  renamed      lib/bar.dart -> lib/baz.dart\n" +
 		"\n" +
-		"fix: resolve applicant history issue\n"
+		"fix: resolve inventory history issue\n"
 
 	if got := b.String(); got != want {
 		t.Errorf("RenderCommit() =\n%q\nwant\n%q", got, want)

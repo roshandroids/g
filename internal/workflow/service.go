@@ -52,6 +52,24 @@ type Repository interface {
 	PreserveChanges(ctx context.Context, dir, message string) (git.PreserveResult, error)
 	// RestoreChanges applies the most recent stash and drops it on success.
 	RestoreChanges(ctx context.Context, dir string) error
+	// PausedOperations lists every paused Git operation marker present in dir.
+	PausedOperations(ctx context.Context, dir string) ([]git.Operation, error)
+	// Continue resumes a paused Git operation.
+	Continue(ctx context.Context, dir string, op git.Operation) error
+	// Abort cancels a paused Git operation.
+	Abort(ctx context.Context, dir string, op git.Operation) error
+	// SoftReset moves HEAD back by count commits while keeping changes staged.
+	SoftReset(ctx context.Context, dir string, count int) error
+	// RecentCommits returns the most recent count commits from HEAD.
+	RecentCommits(ctx context.Context, dir string, count int) ([]git.CommitSummary, error)
+	// CommitCount reports how many commits are reachable from HEAD.
+	CommitCount(ctx context.Context, dir string) (int, error)
+	// GoneBranches lists local branches whose upstream was deleted.
+	GoneBranches(ctx context.Context, dir string) ([]string, error)
+	// MergedBranches lists local branches already merged into base.
+	MergedBranches(ctx context.Context, dir, base string) ([]string, error)
+	// DeleteBranch deletes a local branch; force uses -D instead of -d.
+	DeleteBranch(ctx context.Context, dir, name string, force bool) error
 }
 
 // Options configures a Service.

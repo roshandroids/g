@@ -15,8 +15,8 @@ func trackedRepository() *fakeRepository {
 	return &fakeRepository{
 		status: git.Status{
 			Root:     branchTestDir,
-			Branch:   "HCM-1-work",
-			Upstream: "origin/HCM-1-work",
+			Branch:   "PRJ-1-work",
+			Upstream: "origin/PRJ-1-work",
 		},
 		remotes: []string{"origin"},
 	}
@@ -30,11 +30,11 @@ func TestServicePushToAnExistingUpstream(t *testing.T) {
 		t.Fatalf("Push() error = %v, want nil", err)
 	}
 
-	if result.Branch != "HCM-1-work" {
-		t.Errorf("Branch = %q, want %q", result.Branch, "HCM-1-work")
+	if result.Branch != "PRJ-1-work" {
+		t.Errorf("Branch = %q, want %q", result.Branch, "PRJ-1-work")
 	}
-	if result.Upstream != "origin/HCM-1-work" {
-		t.Errorf("Upstream = %q, want %q", result.Upstream, "origin/HCM-1-work")
+	if result.Upstream != "origin/PRJ-1-work" {
+		t.Errorf("Upstream = %q, want %q", result.Upstream, "origin/PRJ-1-work")
 	}
 	if result.SetUpstream {
 		t.Error("SetUpstream = true, want false when the upstream already existed")
@@ -52,7 +52,7 @@ func TestServicePushToAnExistingUpstream(t *testing.T) {
 // type the remote and branch name.
 func TestServicePushCreatesAnUpstreamWhenMissing(t *testing.T) {
 	repo := &fakeRepository{
-		status:  git.Status{Root: branchTestDir, Branch: "HCM-1-work"},
+		status:  git.Status{Root: branchTestDir, Branch: "PRJ-1-work"},
 		remotes: []string{"origin"},
 	}
 
@@ -64,8 +64,8 @@ func TestServicePushCreatesAnUpstreamWhenMissing(t *testing.T) {
 	if !result.SetUpstream {
 		t.Error("SetUpstream = false, want true")
 	}
-	if result.Upstream != "origin/HCM-1-work" {
-		t.Errorf("Upstream = %q, want %q", result.Upstream, "origin/HCM-1-work")
+	if result.Upstream != "origin/PRJ-1-work" {
+		t.Errorf("Upstream = %q, want %q", result.Upstream, "origin/PRJ-1-work")
 	}
 
 	want := []git.PushOptions{{Remote: "origin", Ref: "HEAD", SetUpstream: true}}

@@ -31,7 +31,7 @@ func runNew(ctx context.Context, env *Env, args []string) error {
 func newBranchRequest(args []string) (workflow.NewBranchRequest, error) {
 	if len(args) == 0 {
 		return workflow.NewBranchRequest{}, usageErrorf(
-			"new needs an issue key, for example `g new HCM-37538 \"applicant id update\"`")
+			"new needs an issue key, for example `g new PRJ-37538 \"inventory id update\"`")
 	}
 	if strings.HasPrefix(args[0], "-") {
 		return workflow.NewBranchRequest{}, usageErrorf("unexpected flag %q", args[0])

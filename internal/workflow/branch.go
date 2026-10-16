@@ -8,7 +8,7 @@ import (
 
 // NewBranchRequest describes the branch to create.
 type NewBranchRequest struct {
-	// Ticket is the issue key the work belongs to, for example "HCM-37538".
+	// Ticket is the issue key the work belongs to, for example "PRJ-37538".
 	Ticket string
 	// Description summarises the work and becomes the branch name suffix.
 	Description string

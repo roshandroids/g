@@ -3,6 +3,8 @@ package git
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/roshandroids/g/internal/process"
@@ -16,14 +18,13 @@ func TestClientFetch(t *testing.T) {
 }
 
 func TestClientRebaseConflict(t *testing.T) {
-	runner := newScriptedRunner().
-		respond("rebase main", process.Result{ExitCode: 1, Stderr: "conflict\n"}).
-		respond("rev-parse -q --verify REBASE_HEAD", process.Result{Stdout: "abc\n"}).
-		respond("rev-parse -q --verify MERGE_HEAD", process.Result{ExitCode: 1}).
-		respond("rev-parse -q --verify CHERRY_PICK_HEAD", process.Result{ExitCode: 1}).
-		respond("rev-parse -q --verify REVERT_HEAD", process.Result{ExitCode: 1})
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, ".git", "rebase-merge"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	runner := noOperation().respond("rebase main", process.Result{ExitCode: 1, Stderr: "conflict\n"})
 
-	err := NewClient(runner).Rebase(context.Background(), testRoot, "main")
+	err := NewClient(runner).Rebase(context.Background(), dir, "main")
 	var conflict *RebaseConflictError
 	if !errors.As(err, &conflict) {
 		t.Fatalf("Rebase() error = %v, want RebaseConflictError", err)

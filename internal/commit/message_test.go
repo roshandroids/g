@@ -68,20 +68,20 @@ func TestMessage(t *testing.T) {
 		{
 			name:    "the documented example",
 			typ:     Fix,
-			subject: "resolve applicant history issue",
-			want:    "fix: resolve applicant history issue",
+			subject: "resolve inventory history issue",
+			want:    "fix: resolve inventory history issue",
 		},
 		{
 			name:    "feature",
 			typ:     Feature,
-			subject: "add applicant document workflow",
-			want:    "feat: add applicant document workflow",
+			subject: "add inventory document workflow",
+			want:    "feat: add inventory document workflow",
 		},
 		{
 			name:    "ui",
 			typ:     UI,
-			subject: "update applicant history layout",
-			want:    "ui: update applicant history layout",
+			subject: "update inventory history layout",
+			want:    "ui: update inventory history layout",
 		},
 		{
 			name:    "the words are left alone",

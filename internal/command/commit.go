@@ -35,7 +35,7 @@ func commitRequest(args []string) (workflow.CommitRequest, error) {
 	}
 	if len(args) < 2 {
 		return workflow.CommitRequest{}, usageErrorf(
-			"commit needs a type and a message, for example `g commit fix \"resolve applicant history issue\"`")
+			"commit needs a type and a message, for example `g commit fix \"resolve inventory history issue\"`")
 	}
 
 	commitType, err := commit.ParseType(args[0])

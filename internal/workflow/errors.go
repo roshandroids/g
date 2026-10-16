@@ -33,6 +33,14 @@ var (
 	ErrNoUpstream = errors.New("the branch has no upstream")
 	// ErrDivergentBase reports that the local base and its remote have diverged.
 	ErrDivergentBase = errors.New("base branch has diverged from its remote")
+	// ErrNoOperation reports that continue or abort was asked with nothing paused.
+	ErrNoOperation = errors.New("no Git operation is currently in progress")
+	// ErrNothingToUndo reports that there are not enough commits to undo.
+	ErrNothingToUndo = errors.New("nothing to undo")
+	// ErrInvalidUndoCount reports that the undo count is not a positive integer.
+	ErrInvalidUndoCount = errors.New("invalid undo count")
+	// ErrAborted reports that the user declined a destructive confirmation.
+	ErrAborted = errors.New("aborted")
 )
 
 // DivergentBaseError reports that the local base cannot be fast-forwarded.

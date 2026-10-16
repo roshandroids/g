@@ -19,14 +19,14 @@ func TestNewBranchCreatesAndSwitches(t *testing.T) {
 	dir := initRepository(t, "README.md")
 
 	result, err := newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{
-		Ticket:      "HCM-37538",
-		Description: "applicant id update",
+		Ticket:      "PRJ-37538",
+		Description: "inventory id update",
 	})
 	if err != nil {
 		t.Fatalf("NewBranch() error = %v, want nil", err)
 	}
 
-	if want := "HCM-37538-applicant-id-update"; result.Branch != want {
+	if want := "PRJ-37538-inventory-id-update"; result.Branch != want {
 		t.Errorf("Branch = %q, want %q", result.Branch, want)
 	}
 	if result.Base != "main" {
@@ -36,7 +36,7 @@ func TestNewBranchCreatesAndSwitches(t *testing.T) {
 		t.Error("Dirty = true, want false for a clean repository")
 	}
 
-	if got := currentBranch(t, dir); got != "HCM-37538-applicant-id-update" {
+	if got := currentBranch(t, dir); got != "PRJ-37538-inventory-id-update" {
 		t.Errorf("current branch = %q, want the branch to be checked out", got)
 	}
 }
@@ -46,7 +46,7 @@ func TestNewBranchWorksInARepositoryOnMaster(t *testing.T) {
 
 	dir := initRepositoryOn(t, "master", "README.md")
 
-	result, err := newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "HCM-1"})
+	result, err := newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "PRJ-1"})
 	if err != nil {
 		t.Fatalf("NewBranch() error = %v, want nil", err)
 	}
@@ -64,7 +64,7 @@ func TestNewBranchDoesNotContactTheRemote(t *testing.T) {
 	dir := initRepository(t, "README.md")
 	runGit(t, dir, "remote", "add", "origin", "https://invalid.example.com/nope.git")
 
-	_, err := newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "HCM-1"})
+	_, err := newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "PRJ-1"})
 	if err != nil {
 		t.Fatalf("NewBranch() error = %v, want nil even with an unreachable remote", err)
 	}
@@ -76,7 +76,7 @@ func TestNewBranchCarriesUncommittedChangesAcross(t *testing.T) {
 	dir := initRepository(t, "README.md")
 	writeFile(t, dir, "README.md", "changed\n")
 
-	result, err := newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "HCM-1"})
+	result, err := newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "PRJ-1"})
 	if err != nil {
 		t.Fatalf("NewBranch() error = %v, want nil", err)
 	}
@@ -96,10 +96,10 @@ func TestNewBranchRejectsAnExistingBranch(t *testing.T) {
 	requireGit(t)
 
 	dir := initRepository(t, "README.md")
-	runGit(t, dir, "branch", "HCM-1-work")
+	runGit(t, dir, "branch", "PRJ-1-work")
 
 	_, err := newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{
-		Ticket:      "HCM-1",
+		Ticket:      "PRJ-1",
 		Description: "work",
 	})
 	if !errors.Is(err, workflow.ErrBranchExists) {
@@ -118,11 +118,11 @@ func TestNewBranchReportsABranchThatOnlyExistsOnTheRemote(t *testing.T) {
 	dir := initRepository(t, "README.md")
 	runGit(t, dir, "remote", "add", "origin", upstream)
 	runGit(t, dir, "push", "-q", "origin", "main")
-	runGit(t, dir, "push", "-q", "origin", "main:HCM-1-work")
+	runGit(t, dir, "push", "-q", "origin", "main:PRJ-1-work")
 	runGit(t, dir, "fetch", "-q", "origin")
 
 	result, err := newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{
-		Ticket:      "HCM-1",
+		Ticket:      "PRJ-1",
 		Description: "work",
 	})
 	if err != nil {
@@ -142,7 +142,7 @@ func TestNewBranchRejectsADetachedHead(t *testing.T) {
 	dir := initRepository(t, "README.md")
 	runGit(t, dir, "checkout", "-q", "--detach", "HEAD")
 
-	_, err := newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "HCM-1"})
+	_, err := newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "PRJ-1"})
 	if !errors.Is(err, workflow.ErrDetachedHead) {
 		t.Fatalf("NewBranch() error = %v, want ErrDetachedHead", err)
 	}
@@ -170,7 +170,7 @@ func TestNewBranchRejectsARebaseInProgress(t *testing.T) {
 		t.Fatal("Detached = false, want true so the mistake this guards against is possible")
 	}
 
-	_, err = newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "HCM-1"})
+	_, err = newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "PRJ-1"})
 	if !errors.Is(err, workflow.ErrOperationInProgress) {
 		t.Fatalf("NewBranch() error = %v, want ErrOperationInProgress", err)
 	}
@@ -185,7 +185,7 @@ func TestNewBranchRejectsAMergeInProgress(t *testing.T) {
 	dir := initRepository(t, "README.md")
 	startConflictingMerge(t, dir)
 
-	_, err := newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "HCM-1"})
+	_, err := newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "PRJ-1"})
 	if !errors.Is(err, workflow.ErrOperationInProgress) {
 		t.Fatalf("NewBranch() error = %v, want ErrOperationInProgress", err)
 	}
@@ -197,7 +197,7 @@ func TestNewBranchWithoutABaseBranch(t *testing.T) {
 	dir := initRepository(t, "README.md")
 	runGit(t, dir, "branch", "-m", "main", "topic")
 
-	_, err := newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "HCM-1"})
+	_, err := newService(t, workflow.Options{}).NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "PRJ-1"})
 	if err == nil {
 		t.Fatal("NewBranch() error = nil, want it to report the missing base branch")
 	}
@@ -301,7 +301,7 @@ func TestBranchWorkflowsOutsideARepository(t *testing.T) {
 	dir := t.TempDir()
 	service := newService(t, workflow.Options{})
 
-	if _, err := service.NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "HCM-1"}); !errors.Is(err, workflow.ErrNotARepository) {
+	if _, err := service.NewBranch(context.Background(), dir, workflow.NewBranchRequest{Ticket: "PRJ-1"}); !errors.Is(err, workflow.ErrNotARepository) {
 		t.Errorf("NewBranch() error = %v, want ErrNotARepository", err)
 	}
 	if _, err := service.Switch(context.Background(), dir, workflow.SwitchRequest{Branch: "main"}); !errors.Is(err, workflow.ErrNotARepository) {

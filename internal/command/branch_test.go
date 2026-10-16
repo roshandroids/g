@@ -11,12 +11,12 @@ import (
 
 func TestRunNew(t *testing.T) {
 	service := &fakeService{newResult: workflow.NewBranchResult{
-		Branch: "HCM-37538-applicant-id-update",
+		Branch: "PRJ-37538-inventory-id-update",
 		Base:   "main",
 	}}
 	env, out, errOut := newEnv(service)
 
-	code := Run(context.Background(), env, []string{"new", "HCM-37538", "applicant id update"})
+	code := Run(context.Background(), env, []string{"new", "PRJ-37538", "inventory id update"})
 	if code != ExitOK {
 		t.Errorf("Run() = %d, want %d", code, ExitOK)
 	}
@@ -24,14 +24,14 @@ func TestRunNew(t *testing.T) {
 		t.Errorf("Run() error output = %q, want none", errOut.String())
 	}
 
-	want := workflow.NewBranchRequest{Ticket: "HCM-37538", Description: "applicant id update"}
+	want := workflow.NewBranchRequest{Ticket: "PRJ-37538", Description: "inventory id update"}
 	if service.newRequest != want {
 		t.Errorf("NewBranch request = %+v, want %+v", service.newRequest, want)
 	}
 	if want := []string{testDir}; len(service.dirs) != 1 || service.dirs[0] != want[0] {
 		t.Errorf("new ran in %v, want %v", service.dirs, want)
 	}
-	if !strings.Contains(out.String(), "Created branch HCM-37538-applicant-id-update from main") {
+	if !strings.Contains(out.String(), "Created branch PRJ-37538-inventory-id-update from main") {
 		t.Errorf("Run() output = %q, want it to report the created branch", out.String())
 	}
 }
@@ -42,10 +42,10 @@ func TestRunNewJoinsAnUnquotedDescription(t *testing.T) {
 	service := &fakeService{}
 	env, _, _ := newEnv(service)
 
-	if code := Run(context.Background(), env, []string{"new", "HCM-1", "applicant", "id", "update"}); code != ExitOK {
+	if code := Run(context.Background(), env, []string{"new", "PRJ-1", "inventory", "id", "update"}); code != ExitOK {
 		t.Errorf("Run() = %d, want %d", code, ExitOK)
 	}
-	if want := "applicant id update"; service.newRequest.Description != want {
+	if want := "inventory id update"; service.newRequest.Description != want {
 		t.Errorf("Description = %q, want %q", service.newRequest.Description, want)
 	}
 }
@@ -54,7 +54,7 @@ func TestRunNewWithoutADescription(t *testing.T) {
 	service := &fakeService{}
 	env, _, _ := newEnv(service)
 
-	if code := Run(context.Background(), env, []string{"new", "HCM-1"}); code != ExitOK {
+	if code := Run(context.Background(), env, []string{"new", "PRJ-1"}); code != ExitOK {
 		t.Errorf("Run() = %d, want %d", code, ExitOK)
 	}
 	if service.newRequest.Description != "" {
@@ -105,7 +105,7 @@ func TestRunNewReportsWorkflowFailures(t *testing.T) {
 	}{
 		{
 			name: "branch exists",
-			err:  &workflow.BranchExistsError{Name: "HCM-1-work"},
+			err:  &workflow.BranchExistsError{Name: "PRJ-1-work"},
 			want: "already exists",
 		},
 		{
@@ -125,7 +125,7 @@ func TestRunNewReportsWorkflowFailures(t *testing.T) {
 			service := &fakeService{newErr: test.err}
 			env, out, errOut := newEnv(service)
 
-			if code := Run(context.Background(), env, []string{"new", "HCM-1"}); code != ExitError {
+			if code := Run(context.Background(), env, []string{"new", "PRJ-1"}); code != ExitError {
 				t.Errorf("Run() = %d, want %d", code, ExitError)
 			}
 			if !strings.Contains(errOut.String(), test.want) {
@@ -221,11 +221,11 @@ func TestRunSwitchReportsAnUnknownBranch(t *testing.T) {
 }
 
 func TestRunNewReportsWriteFailure(t *testing.T) {
-	service := &fakeService{newResult: workflow.NewBranchResult{Branch: "HCM-1", Base: "main"}}
+	service := &fakeService{newResult: workflow.NewBranchResult{Branch: "PRJ-1", Base: "main"}}
 	env, _, errOut := newEnv(service)
 	env.Out = failingWriter{}
 
-	if code := Run(context.Background(), env, []string{"new", "HCM-1"}); code != ExitError {
+	if code := Run(context.Background(), env, []string{"new", "PRJ-1"}); code != ExitError {
 		t.Errorf("Run() = %d, want %d", code, ExitError)
 	}
 	if !strings.Contains(errOut.String(), "write failed") {
